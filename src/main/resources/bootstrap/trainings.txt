@@ -1,0 +1,2 @@
+1,1,Morning Workout,fitness,2024-01-15,60
+2,2,Evening Yoga,yoga,2024-01-16,45
