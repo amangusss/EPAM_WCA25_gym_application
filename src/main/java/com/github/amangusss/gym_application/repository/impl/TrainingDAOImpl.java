@@ -1,9 +1,13 @@
-package com.github.amangusss.gym_application.repository;
+package com.github.amangusss.gym_application.repository.impl;
 
-import com.github.amangusss.gym_application.entity.Training;
+import com.github.amangusss.gym_application.entity.training.Training;
 import com.github.amangusss.gym_application.entity.TrainingType;
-import com.github.amangusss.gym_application.repository.dao.TrainingDAO;
+import com.github.amangusss.gym_application.exception.ValidationException;
+import com.github.amangusss.gym_application.repository.TrainingDAO;
 import com.github.amangusss.gym_application.storage.TrainingStorage;
+import com.github.amangusss.gym_application.util.constants.LoggerConstants;
+import com.github.amangusss.gym_application.util.constants.ValidationConstants;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,12 +32,12 @@ public class TrainingDAOImpl implements TrainingDAO {
     @Override
     public Training save(Training training) {
         if (training == null) {
-            throw new IllegalArgumentException("training cannot be null");
+            throw new ValidationException(ValidationConstants.TRAINING_NULL);
         }
 
-        logger.debug("Saving training: {}", training.getTrainingName());
+        logger.debug(LoggerConstants.DAO_SAVING, "training", training.getTrainingName());
         Training saved =  trainingStorage.save(training);
-        logger.info("Training saved successfully with id: {}", saved.getId());
+        logger.info(LoggerConstants.DAO_SAVED, "Training", saved.getId());
         return saved;
     }
 
@@ -43,13 +47,13 @@ public class TrainingDAOImpl implements TrainingDAO {
             return null;
         }
 
-        logger.debug("Finding training: {}", id);
+        logger.debug(LoggerConstants.DAO_FINDING, "training", id);
         Training training = trainingStorage.findById(id);
 
         if (training != null) {
-            logger.info("Training found: {}", training.getTrainingName());
+            logger.info(LoggerConstants.DAO_FOUND, "Training", id);
         } else {
-            logger.debug("Training not found with id: {}", id);
+            logger.debug(LoggerConstants.DAO_NOT_FOUND, "Training", id);
         }
 
         return training;
@@ -57,9 +61,9 @@ public class TrainingDAOImpl implements TrainingDAO {
 
     @Override
     public List<Training> findAll() {
-        logger.debug("Finding all trainings");
+        logger.debug(LoggerConstants.DAO_FINDING_ALL, "trainings");
         List<Training> trainings = trainingStorage.findAll();
-        logger.info("All trainings found: {}", trainings.size());
+        logger.info(LoggerConstants.DAO_FOUND_ALL, trainings.size(), "trainings");
         return trainings;
     }
 
@@ -69,11 +73,11 @@ public class TrainingDAOImpl implements TrainingDAO {
             return new ArrayList<>();
         }
 
-        logger.debug("Finding trainings by trainer id: {}", trainerId);
+        logger.debug(LoggerConstants.DAO_FINDING_BY_TRAINER, "trainings", trainerId);
         List<Training> trainings = trainingStorage.findAll().stream()
                 .filter(t -> t.getTrainerId().equals(trainerId))
                 .toList();
-        logger.info("Found {} trainings for trainer {}", trainings.size(), trainerId);
+        logger.info(LoggerConstants.DAO_FOUND_BY_TRAINER, trainings.size(), "trainings", trainerId);
         return trainings;
     }
 
@@ -83,11 +87,11 @@ public class TrainingDAOImpl implements TrainingDAO {
             return new ArrayList<>();
         }
 
-        logger.debug("Finding trainings by trainee id: {}", traineeId);
+        logger.debug(LoggerConstants.DAO_FINDING_BY_TRAINEE, "trainings", traineeId);
         List<Training> trainings = trainingStorage.findAll().stream()
                 .filter(t -> t.getTraineeId().equals(traineeId))
                 .toList();
-        logger.info("Found {} trainings for trainee {}", trainings.size(), traineeId);
+        logger.info(LoggerConstants.DAO_FOUND_BY_TRAINEE, trainings.size(), "trainings", traineeId);
         return trainings;
     }
 
@@ -97,11 +101,11 @@ public class TrainingDAOImpl implements TrainingDAO {
             return new ArrayList<>();
         }
 
-        logger.debug("Finding trainings by type: {}", trainingType);
+        logger.debug(LoggerConstants.DAO_FINDING_BY_TYPE, "trainings", trainingType);
         List<Training> trainings = trainingStorage.findAll().stream()
                 .filter(t -> trainingType.equals(t.getTrainingType()))
                 .toList();
-        logger.info("Found {} trainings with type {}", trainings.size(), trainingType);
+        logger.info(LoggerConstants.DAO_FOUND_BY_TYPE, trainings.size(), "trainings", trainingType);
         return trainings;
     }
 
@@ -112,19 +116,19 @@ public class TrainingDAOImpl implements TrainingDAO {
         }
 
         if (startDate.isAfter(endDate)) {
-            throw new  IllegalArgumentException("startDate cannot be after endDate");
+            throw new ValidationException(ValidationConstants.START_DATE_AFTER_END_DATE);
         }
 
-        logger.debug("Finding trainings by date range: {} to {}", startDate, endDate);
+        logger.debug(LoggerConstants.DAO_FINDING_BY_DATE_RANGE, "trainings", startDate, endDate);
         List<Training> trainings = trainingStorage.findAll().stream()
                 .filter(t -> {
                     LocalDate trainingDate = t.getTrainingDate();
                     return trainingDate != null &&
-                            !trainingDate.isAfter(startDate) &&
-                            !trainingDate.isBefore(endDate);
+                            !trainingDate.isBefore(startDate) &&
+                            !trainingDate.isAfter(endDate);
                 })
                 .toList();
-        logger.info("Found {} trainings in date range {} to {}", trainings.size(), startDate, endDate);
+        logger.info(LoggerConstants.DAO_FOUND_BY_DATE_RANGE, trainings.size(), "trainings", startDate, endDate);
         return trainings;
     }
 }

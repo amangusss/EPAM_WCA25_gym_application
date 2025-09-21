@@ -1,13 +1,18 @@
 package com.github.amangusss.gym_application.service.impl;
 
-import com.github.amangusss.gym_application.entity.Trainee;
-import com.github.amangusss.gym_application.entity.Trainer;
-import com.github.amangusss.gym_application.entity.Training;
-import com.github.amangusss.gym_application.repository.dao.TraineeDAO;
-import com.github.amangusss.gym_application.repository.dao.TrainerDAO;
-import com.github.amangusss.gym_application.repository.dao.TrainingDAO;
+import com.github.amangusss.gym_application.entity.trainee.Trainee;
+import com.github.amangusss.gym_application.entity.trainer.Trainer;
+import com.github.amangusss.gym_application.entity.training.Training;
+import com.github.amangusss.gym_application.exception.TraineeNotFoundException;
+import com.github.amangusss.gym_application.exception.TrainerNotFoundException;
+import com.github.amangusss.gym_application.exception.ValidationException;
+import com.github.amangusss.gym_application.repository.TraineeDAO;
+import com.github.amangusss.gym_application.repository.TrainerDAO;
+import com.github.amangusss.gym_application.repository.TrainingDAO;
 
 import com.github.amangusss.gym_application.service.TrainingService;
+import com.github.amangusss.gym_application.util.constants.LoggerConstants;
+import com.github.amangusss.gym_application.util.constants.ValidationConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,33 +47,33 @@ public class TrainingServiceImpl implements TrainingService {
     @Override
     public Training createTraining(Training training) {
         if (training == null) {
-            throw new IllegalArgumentException("training cannot be null");
+            throw new ValidationException(ValidationConstants.TRAINING_NULL);
         }
 
         validateTraining(training);
 
-        logger.debug("Creating training: {}", training.getTrainingName());
+        logger.debug(LoggerConstants.TRAINING_CREATING, training.getTrainingName());
 
         Trainee trainee = traineeDAO.findById(training.getTraineeId());
         if (trainee == null) {
-            throw new IllegalArgumentException("Trainee with id " + training.getTraineeId() + " not found");
+            throw new TraineeNotFoundException(String.format(ValidationConstants.TRAINEE_NOT_FOUND_BY_ID, training.getTraineeId()));
         }
 
         Trainer trainer = trainerDAO.findById(training.getTrainerId());
         if (trainer == null) {
-            throw new IllegalArgumentException("Trainer with id " + training.getTrainerId() + " not found");
+            throw new TrainerNotFoundException(String.format(ValidationConstants.TRAINER_NOT_FOUND_BY_ID, training.getTrainerId()));
         }
 
         if (!trainee.isActive()) {
-            throw new IllegalArgumentException("Trainee with id " + training.getTraineeId() + " is not active");
+            throw new ValidationException(String.format(ValidationConstants.TRAINEE_NOT_ACTIVE, training.getTraineeId()));
         }
 
         if (!trainer.isActive()) {
-            throw new IllegalArgumentException("Trainer with id " + training.getTrainerId() + " is not active");
+            throw new ValidationException(String.format(ValidationConstants.TRAINER_NOT_ACTIVE, training.getTrainerId()));
         }
 
         Training savedTraining = trainingDAO.save(training);
-        logger.info("Training created successfully with id: {}", savedTraining.getId());
+        logger.info(LoggerConstants.TRAINING_CREATED, savedTraining.getId());
         return savedTraining;
     }
 
@@ -84,27 +89,27 @@ public class TrainingServiceImpl implements TrainingService {
 
     private void validateTraining(Training training) {
         if (training.getTrainerId() == null) {
-            throw new IllegalArgumentException("Trainer id is required");
+            throw new ValidationException(ValidationConstants.TRAINER_ID_REQUIRED);
         }
 
         if (training.getTraineeId() == null) {
-            throw new IllegalArgumentException("Trainee id is required");
+            throw new ValidationException(ValidationConstants.TRAINEE_ID_REQUIRED);
         }
 
         if (training.getTrainingName() == null || training.getTrainingName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Training name is required");
+            throw new ValidationException(ValidationConstants.TRAINING_NAME_NULL);
         }
 
         if (training.getTrainingType() == null) {
-            throw new IllegalArgumentException("Training type is required");
+            throw new ValidationException(ValidationConstants.TRAINING_TYPE_NULL);
         }
 
         if (training.getTrainingDate() == null) {
-            throw new IllegalArgumentException("Training date is required");
+            throw new ValidationException(ValidationConstants.TRAINING_DATE_NULL);
         }
 
         if (training.getTrainingDuration() == null) {
-            throw new IllegalArgumentException("Training duration is required");
+            throw new ValidationException(ValidationConstants.TRAINING_DURATION_INVALID);
         }
     }
 }

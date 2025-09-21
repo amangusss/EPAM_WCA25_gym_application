@@ -1,4 +1,6 @@
-package com.github.amangusss.gym_application.entity;
+package com.github.amangusss.gym_application.entity.training;
+
+import com.github.amangusss.gym_application.entity.TrainingType;
 
 import java.time.LocalDate;
 import java.util.Objects;
@@ -15,12 +17,8 @@ public class Training {
 
     public Training() {}
 
-    public Training(Long traineeId,
-                    Long trainerId,
-                    String trainingName,
-                    TrainingType trainingType,
-                    LocalDate trainingDate,
-                    Integer trainingDuration) {
+    public Training(Long traineeId, Long trainerId, String trainingName,
+                    TrainingType trainingType, LocalDate trainingDate, Integer trainingDuration) {
         this.traineeId = traineeId;
         this.trainerId = trainerId;
         this.trainingName = trainingName;

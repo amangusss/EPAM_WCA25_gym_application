@@ -1,6 +1,6 @@
-package com.github.amangusss.gym_application.repository.dao;
+package com.github.amangusss.gym_application.repository;
 
-import com.github.amangusss.gym_application.entity.Training;
+import com.github.amangusss.gym_application.entity.training.Training;
 import com.github.amangusss.gym_application.entity.TrainingType;
 
 import java.time.LocalDate;
