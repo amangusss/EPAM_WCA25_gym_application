@@ -1,5 +1,8 @@
 package com.github.amangusss.gym_application.storage;
 
+import com.github.amangusss.gym_application.exception.ValidationException;
+import com.github.amangusss.gym_application.util.constants.LoggerConstants;
+import com.github.amangusss.gym_application.util.constants.ValidationConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +24,7 @@ public abstract class InMemoryStorage<T> implements Storage<T> {
     @Override
     public T save(T entity) {
         if (entity == null) {
-            throw new IllegalArgumentException("Entity must not be null");
+            throw new ValidationException(ValidationConstants.ENTITY_MUST_NOT_BE_NULL);
         }
 
         Long id = extractId(entity);
@@ -31,7 +34,7 @@ public abstract class InMemoryStorage<T> implements Storage<T> {
         }
 
         storage.put(id, entity);
-        logger.debug("Saved entity with id: {}", id);
+        logger.debug(LoggerConstants.ENTITY_SAVED, id);
         return entity;
     }
 
@@ -42,30 +45,30 @@ public abstract class InMemoryStorage<T> implements Storage<T> {
         }
 
         T entity = storage.get(id);
-        logger.debug("Find by id {}: {}", id, entity != null ? "found" : "not found");
+        logger.debug(LoggerConstants.ENTITY_FOUND, id, entity != null ? "found" : "not found");
         return storage.get(id);
     }
 
     @Override
     public List<T> findAll() {
         List<T> result = new ArrayList<>(storage.values());
-        logger.debug("Find all: {}", result.size());
+        logger.debug(LoggerConstants.ENTITY_FIND_ALL, result.size());
         return result;
     }
 
     @Override
     public T update(T entity) {
         if (entity == null) {
-            throw new IllegalArgumentException("Entity must not be null");
+            throw new ValidationException(ValidationConstants.ENTITY_MUST_NOT_BE_NULL);
         }
 
         Long id = extractId(entity);
         if (id == null || !storage.containsKey(id)) {
-            throw new IllegalArgumentException("Entity with id " + id + " not found");
+            throw new ValidationException(String.format(ValidationConstants.ENTITY_NOT_FOUND_BY_ID, id));
         }
 
         storage.put(id, entity);
-        logger.debug("Updated entity with id: {}", id);
+        logger.debug(LoggerConstants.ENTITY_UPDATED, id);
         return entity;
     }
 
@@ -76,7 +79,7 @@ public abstract class InMemoryStorage<T> implements Storage<T> {
         }
 
         boolean removed = storage.remove(id) != null;
-        logger.debug("Deleted entity with id {} : {} ", id, removed ? "success" : "failed");
+        logger.debug(LoggerConstants.ENTITY_DELETED, id, removed ? "success" : "failed");
         return removed;
     }
 
@@ -85,12 +88,6 @@ public abstract class InMemoryStorage<T> implements Storage<T> {
         return id != null && storage.containsKey(id);
     }
 
-    @Override
-    public void clear() {
-        int size = storage.size();
-        storage.clear();
-        logger.debug("Cleared {} entities", size);
-    }
 
     @Override
     public Long generateNextId() {

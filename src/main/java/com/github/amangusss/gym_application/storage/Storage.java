@@ -7,6 +7,5 @@ public interface Storage<T> {
     T update(T entity);
     boolean deleteById(Long id);
     boolean existsById(Long id);
-    void clear();
     Long generateNextId();
 }

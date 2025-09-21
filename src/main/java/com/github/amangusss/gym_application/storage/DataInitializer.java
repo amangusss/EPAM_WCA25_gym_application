@@ -2,10 +2,18 @@ package com.github.amangusss.gym_application.storage;
 
 import javax.annotation.PostConstruct;
 
-import com.github.amangusss.gym_application.entity.Trainee;
-import com.github.amangusss.gym_application.entity.Trainer;
-import com.github.amangusss.gym_application.entity.Training;
+import com.github.amangusss.gym_application.entity.trainee.Trainee;
+import com.github.amangusss.gym_application.entity.trainee.TraineeBuilder;
+import com.github.amangusss.gym_application.entity.trainer.Trainer;
+import com.github.amangusss.gym_application.entity.trainer.TrainerBuilder;
+import com.github.amangusss.gym_application.entity.training.Training;
 import com.github.amangusss.gym_application.entity.TrainingType;
+import com.github.amangusss.gym_application.entity.training.TrainingBuilder;
+import com.github.amangusss.gym_application.exception.DataInitializationException;
+import com.github.amangusss.gym_application.util.constants.ConfigConstants;
+import com.github.amangusss.gym_application.util.constants.LoggerConstants;
+import com.github.amangusss.gym_application.util.constants.ValidationConstants;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +28,7 @@ import java.time.LocalDate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-@Component
+@Component(ConfigConstants.BEAN_DATA_INITIALIZER)
 public class DataInitializer {
 
     public static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
@@ -36,9 +44,9 @@ public class DataInitializer {
     public DataInitializer(TraineeStorage traineeStorage,
                            TrainerStorage trainerStorage,
                            TrainingStorage trainingStorage,
-                           @Value("${data.trainee.file}") String traineeFilePath,
-                           @Value("${data.trainer.file}") String trainerFilePath,
-                           @Value("${data.training.file}") String trainingFilePath) {
+                           @Value("${" + ConfigConstants.PROP_TRAINEE_FILE + "}") String traineeFilePath,
+                           @Value("${" + ConfigConstants.PROP_TRAINER_FILE + "}") String trainerFilePath,
+                           @Value("${" + ConfigConstants.PROP_TRAINING_FILE + "}") String trainingFilePath) {
 
         this.traineeStorage = traineeStorage;
         this.trainerStorage = trainerStorage;
@@ -50,24 +58,25 @@ public class DataInitializer {
 
     @PostConstruct
     public void init() {
-        logger.info("Initializing data");
+        logger.info(LoggerConstants.DATA_INIT_STARTING);
 
         try {
             loadTrainees();
             loadTrainers();
             loadTrainings();
 
-            logger.info("Data initialization completed! " +
-                        "Loaded: {} trainees, {} trainers, {} trainings",
+            logger.info(LoggerConstants.DATA_INIT_COMPLETED,
                         traineeStorage.findAll().size(),
                         trainerStorage.findAll().size(),
                         trainingStorage.findAll().size());
         } catch (Exception e) {
-            logger.error("Failed to initialize data", e);
+            logger.error(LoggerConstants.DATA_INIT_FAILED, e);
+            throw new DataInitializationException(String.format(ValidationConstants.DATA_INITIALIZATION_FAILED, e.getMessage()), e);
         }
     }
 
     private void loadTrainees() {
+        logger.info(LoggerConstants.LOADING_TRAINEES, traineeFilePath);
         loadDataFromFile(traineeFilePath, "trainee", this::parseTraineeFile, traineeStorage::save);
     }
 
@@ -75,33 +84,34 @@ public class DataInitializer {
         try {
             String[] fields = line.split(",");
             if (fields.length < 5) {
-                logger.warn("Invalid trainee line: {}", line);
+                logger.warn(LoggerConstants.INVALID_LINE, "trainee", line);
                 return null;
             }
 
-            Trainee trainee = new Trainee();
-            trainee.setFirstName(fields[0].trim());
-            trainee.setLastName(fields[1].trim());
-            trainee.setUsername(fields[2].trim());
-            trainee.setPassword(fields[3].trim());
-            trainee.setActive(Boolean.parseBoolean(fields[4].trim()));
+            TraineeBuilder builder = TraineeBuilder.builder()
+                    .firstName(fields[0].trim())
+                    .lastName(fields[1].trim())
+                    .username(fields[2].trim())
+                    .password(fields[3].trim())
+                    .isActive(Boolean.parseBoolean(fields[4].trim()));
 
             if (fields.length > 5 && !fields[5].trim().isEmpty()) {
-                trainee.setDateOfBirth(LocalDate.parse(fields[5].trim()));
+                builder.dateOfBirth(LocalDate.parse(fields[5].trim()));
             }
 
             if (fields.length > 6 && !fields[6].trim().isEmpty()) {
-                trainee.setAddress(fields[6].trim());
+                builder.address(fields[6].trim());
             }
 
-            return trainee;
+            return builder.build();
         } catch (Exception e) {
-            logger.error("Failed to parse trainee line: {}", line, e);
+            logger.error(LoggerConstants.FAILED_PARSE_LINE_TWO_ARGUMENTS, "trainee", line, e);
             return null;
         }
     }
 
     private void loadTrainers() {
+        logger.info(LoggerConstants.LOADING_TRAINERS, trainerFilePath);
         loadDataFromFile(trainerFilePath, "trainer", this::parseTrainerFile, trainerStorage::save);
     }
 
@@ -109,26 +119,26 @@ public class DataInitializer {
         try {
             String[] fields = line.split(",");
             if (fields.length < 6) {
-                logger.warn("Invalid trainer line: {}", line);
+                logger.warn(LoggerConstants.INVALID_LINE, "trainer", line);
                 return null;
             }
 
-            Trainer trainer = new Trainer();
-            trainer.setFirstName(fields[0].trim());
-            trainer.setLastName(fields[1].trim());
-            trainer.setUsername(fields[2].trim());
-            trainer.setPassword(fields[3].trim());
-            trainer.setActive(Boolean.parseBoolean(fields[4].trim()));
-            trainer.setSpecialization(TrainingType.fromDisplayName(fields[5].trim()));
-
-            return trainer;
+            return TrainerBuilder.builder()
+                    .firstName(fields[0].trim())
+                    .lastName(fields[1].trim())
+                    .username(fields[2].trim())
+                    .password(fields[3].trim())
+                    .isActive(Boolean.parseBoolean(fields[4].trim()))
+                    .specialization(TrainingType.fromDisplayName(fields[5].trim()))
+                    .build();
         } catch (Exception e) {
-            logger.error("Failed to parse trainer line: {}", line, e);
+            logger.error(LoggerConstants.FAILED_PARSE_LINE_TWO_ARGUMENTS, "trainer", line, e);
             return null;
         }
     }
 
     private void loadTrainings() {
+        logger.info(LoggerConstants.LOADING_TRAININGS, trainingFilePath);
         loadDataFromFile(trainingFilePath, "training", this::parseTrainingFile, trainingStorage::save);
     }
 
@@ -136,21 +146,20 @@ public class DataInitializer {
         try {
             String[] fields = line.split(",");
             if (fields.length < 6) {
-                logger.warn("Invalid training line: {}", line);
+                logger.warn(LoggerConstants.INVALID_LINE, "training", line);
                 return null;
             }
 
-            Training training = new Training();
-            training.setTraineeId(Long.parseLong(fields[0].trim()));
-            training.setTrainerId(Long.parseLong(fields[1].trim()));
-            training.setTrainingName(fields[2].trim());
-            training.setTrainingType(TrainingType.fromDisplayName(fields[3].trim()));
-            training.setTrainingDate(LocalDate.parse(fields[4].trim()));
-            training.setTrainingDuration(Integer.parseInt(fields[5].trim()));
-
-            return training;
+            return TrainingBuilder.builder()
+                    .traineeId(Long.parseLong(fields[0].trim()))
+                    .trainerId(Long.parseLong(fields[1].trim()))
+                    .trainingName(fields[2].trim())
+                    .trainingType(TrainingType.fromDisplayName(fields[3].trim()))
+                    .trainingDate(LocalDate.parse(fields[4].trim()))
+                    .trainingDuration(Integer.parseInt(fields[5].trim()))
+                    .build();
         } catch (Exception e) {
-            logger.error("Failed to parse training line: {}", line, e);
+            logger.error(LoggerConstants.FAILED_PARSE_LINE_TWO_ARGUMENTS, "training", line, e);
             return null;
         }
     }
@@ -160,7 +169,7 @@ public class DataInitializer {
         try {
             ClassPathResource resource = new ClassPathResource(filePath);
             if (!resource.exists()) {
-                logger.warn("{} file not found: {}. Skipping initialization for {}",
+                logger.warn(LoggerConstants.FILE_NOT_FOUND,
                         entityType, filePath, entityType);
                 return;
             }
@@ -184,14 +193,15 @@ public class DataInitializer {
                             count++;
                         }
                     } catch (Exception e) {
-                        logger.error("Failed to parse {} line {}: {}", entityType, lineNumber, line, e);
+                        logger.error(LoggerConstants.FAILED_PARSE_LINE_THREE_ARGUMENTS, entityType, lineNumber, line, e);
                     }
                 }
 
-                logger.info("Loaded {} {} from file: {}", count, entityType, filePath);
+                logger.info(LoggerConstants.LOADED_ENTITIES, count, entityType);
             }
         } catch (Exception e) {
-            logger.error("Failed to load {} from file: {}", entityType, filePath, e);
+            logger.error(LoggerConstants.FAILED_TO_LOAD_FROM_FILE, entityType, filePath, e);
+            throw new DataInitializationException(String.format(ValidationConstants.DATA_INITIALIZATION_FAILED, filePath), e);
         }
     }
 
