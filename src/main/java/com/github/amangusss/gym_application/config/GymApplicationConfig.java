@@ -1,5 +1,6 @@
 package com.github.amangusss.gym_application.config;
 
+import com.github.amangusss.gym_application.util.constants.LoggerConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.*;
@@ -23,6 +24,6 @@ public class GymApplicationConfig {
 
     @PostConstruct
     public void init() {
-        logger.info("Gym application configuration initialized");
+        logger.info(LoggerConstants.CONFIG_INITIALIZED);
     }
 }
