@@ -56,7 +56,7 @@ public class TrainingDAOImpl implements TrainingDAO {
     }
 
     @Override
-    public Iterable<Training> findAll() {
+    public List<Training> findAll() {
         logger.debug("Finding all trainings");
         List<Training> trainings = trainingStorage.findAll();
         logger.info("All trainings found: {}", trainings.size());
@@ -64,7 +64,7 @@ public class TrainingDAOImpl implements TrainingDAO {
     }
 
     @Override
-    public Iterable<Training> findByTrainerId(Long trainerId) {
+    public List<Training> findByTrainerId(Long trainerId) {
         if (trainerId == null) {
             return new ArrayList<>();
         }
@@ -78,7 +78,7 @@ public class TrainingDAOImpl implements TrainingDAO {
     }
 
     @Override
-    public Iterable<Training> findByTraineeId(Long traineeId) {
+    public List<Training> findByTraineeId(Long traineeId) {
         if (traineeId == null) {
             return new ArrayList<>();
         }
@@ -92,7 +92,7 @@ public class TrainingDAOImpl implements TrainingDAO {
     }
 
     @Override
-    public Iterable<Training> findByTrainingType(TrainingType trainingType) {
+    public List<Training> findByTrainingType(TrainingType trainingType) {
         if (trainingType == null) {
             return new ArrayList<>();
         }
@@ -106,7 +106,7 @@ public class TrainingDAOImpl implements TrainingDAO {
     }
 
     @Override
-    public Iterable<Training> findByDateRange(LocalDate startDate, LocalDate endDate) {
+    public List<Training> findByDateRange(LocalDate startDate, LocalDate endDate) {
         if (startDate == null ||  endDate == null) {
             return new ArrayList<>();
         }
