@@ -1,9 +1,13 @@
-package com.github.amangusss.gym_application.repository;
+package com.github.amangusss.gym_application.repository.impl;
 
-import com.github.amangusss.gym_application.entity.Trainee;
+import com.github.amangusss.gym_application.entity.trainee.Trainee;
 import com.github.amangusss.gym_application.entity.User;
-import com.github.amangusss.gym_application.repository.dao.TraineeDAO;
+import com.github.amangusss.gym_application.exception.TraineeNotFoundException;
+import com.github.amangusss.gym_application.exception.ValidationException;
+import com.github.amangusss.gym_application.repository.TraineeDAO;
 import com.github.amangusss.gym_application.storage.TraineeStorage;
+import com.github.amangusss.gym_application.util.constants.LoggerConstants;
+import com.github.amangusss.gym_application.util.constants.ValidationConstants;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,38 +26,38 @@ public class TraineeDAOImpl implements TraineeDAO {
     @Autowired
     public TraineeDAOImpl(TraineeStorage traineeStorage) {
         this.traineeStorage = traineeStorage;
-        logger.info("TraineeDAOImpl created");
+        logger.info(LoggerConstants.DAO_CREATED, "TraineeDAOImpl");
     }
 
     @Override
     public Trainee save(Trainee trainee) {
         if (trainee == null) {
-            throw new IllegalArgumentException("Trainee must not be null");
+            throw new ValidationException(ValidationConstants.TRAINEE_NULL);
         }
 
-        logger.debug("Saving trainee: {}", trainee.getUsername());
+        logger.debug(LoggerConstants.DAO_SAVING, "trainee", trainee.getUsername());
         Trainee savedTrainee = traineeStorage.save(trainee);
-        logger.info("Trainee saved successfully with id: {}", savedTrainee.getId());
+        logger.info(LoggerConstants.DAO_SAVED, "Trainee", savedTrainee.getId());
         return savedTrainee;
     }
 
     @Override
     public Trainee update(Trainee trainee) {
         if (trainee == null) {
-            throw new IllegalArgumentException("Trainee must not be null");
+            throw new ValidationException(ValidationConstants.TRAINEE_NULL);
         }
 
         if (trainee.getId() == null) {
-            throw new IllegalArgumentException("Trainee with id " + trainee.getId() + " not found");
+            throw new ValidationException(ValidationConstants.TRAINEE_ID_NULL);
         }
 
         if (!traineeStorage.existsById(trainee.getId())) {
-            throw new IllegalArgumentException("Trainee with id " + trainee.getId() + " not found");
+            throw new TraineeNotFoundException(String.format(ValidationConstants.TRAINEE_NOT_FOUND_BY_ID, trainee.getId()));
         }
 
-        logger.debug("Updating trainee: {}", trainee.getUsername());
+        logger.debug(LoggerConstants.DAO_UPDATING, "trainee", trainee.getUsername());
         Trainee updatedTrainee = traineeStorage.update(trainee);
-        logger.info("Trainee updated successfully with id: {}", updatedTrainee.getId());
+        logger.info(LoggerConstants.DAO_UPDATED, "Trainee", updatedTrainee.getId());
         return updatedTrainee;
     }
 
@@ -63,13 +67,13 @@ public class TraineeDAOImpl implements TraineeDAO {
             return false;
         }
 
-        logger.debug("Deleting trainee with id: {}", id);
+        logger.debug(LoggerConstants.DAO_DELETING, "trainee", id);
         boolean removed = traineeStorage.deleteById(id);
 
         if (removed) {
-            logger.info("Trainee with id {} deleted successfully", id);
+            logger.info(LoggerConstants.DAO_DELETED, "Trainee", id);
         } else {
-            logger.warn("Trainee with id {} not found", id);
+            logger.warn(LoggerConstants.DAO_NOT_FOUND, "Trainee", id);
         }
 
         return removed;
@@ -81,13 +85,13 @@ public class TraineeDAOImpl implements TraineeDAO {
             return null;
         }
 
-        logger.debug("Finding trainee with id: {}", id);
+        logger.debug(LoggerConstants.DAO_FINDING, "trainee", id);
         Trainee trainee = traineeStorage.findById(id);
 
         if (trainee != null) {
-            logger.info("Trainee found successfully with id: {}", id);
+            logger.info(LoggerConstants.DAO_FOUND, "Trainee", id);
         } else {
-            logger.debug("Trainee with id {} not found", id);
+            logger.debug(LoggerConstants.DAO_NOT_FOUND, "Trainee", id);
         }
 
         return trainee;
@@ -95,9 +99,9 @@ public class TraineeDAOImpl implements TraineeDAO {
 
     @Override
     public List<Trainee> findAll() {
-        logger.debug("Finding all trainees");
+        logger.debug(LoggerConstants.DAO_FINDING_ALL, "trainees");
         List<Trainee> trainees = traineeStorage.findAll();
-        logger.info("Found {} trainees", trainees.size());
+        logger.info(LoggerConstants.DAO_FOUND_ALL, trainees.size(), "trainees");
         return trainees;
     }
 
@@ -107,16 +111,16 @@ public class TraineeDAOImpl implements TraineeDAO {
             return null;
         }
 
-        logger.debug("Finding trainee with username: {}", username);
+        logger.debug(LoggerConstants.DAO_FINDING_BY_USERNAME, "trainee", username);
         Trainee trainee = traineeStorage.findAll().stream()
                 .filter(t -> t.getUsername().equals(username))
                 .findFirst()
                 .orElse(null);
 
         if (trainee != null) {
-            logger.info("Trainee found successfully with username: {}", username);
+            logger.info(LoggerConstants.DAO_FOUND_BY_USERNAME, "Trainee", username);
         } else {
-            logger.debug("Trainee with username {} not found", username);
+            logger.debug(LoggerConstants.DAO_NOT_FOUND_BY_USERNAME, "Trainee", username);
         }
 
         return trainee;
@@ -124,12 +128,12 @@ public class TraineeDAOImpl implements TraineeDAO {
 
     @Override
     public List<Trainee> findActiveTrainees() {
-        logger.debug("Finding all active trainees");
+        logger.debug(LoggerConstants.DAO_FINDING_ACTIVE, "trainees");
         List<Trainee> trainees = traineeStorage.findAll().stream()
                 .filter(User::isActive)
                 .toList();
 
-        logger.info("Found {} active trainees", trainees.size());
+        logger.info(LoggerConstants.DAO_FOUND_ACTIVE, trainees.size(), "trainees");
         return trainees;
     }
 
@@ -140,7 +144,7 @@ public class TraineeDAOImpl implements TraineeDAO {
         }
 
         boolean exists = findByUsername(username) != null;
-        logger.debug("Trainee with username {} exists: {}", username, exists);
+        logger.debug(LoggerConstants.DAO_EXISTS_BY_USERNAME, "Trainee", username, exists);
         return exists;
     }
 }

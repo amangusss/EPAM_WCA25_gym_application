@@ -1,11 +1,16 @@
 package com.github.amangusss.gym_application.service.impl;
 
-import com.github.amangusss.gym_application.entity.Trainee;
-import com.github.amangusss.gym_application.repository.dao.TraineeDAO;
-import com.github.amangusss.gym_application.repository.dao.TrainerDAO;
+import com.github.amangusss.gym_application.entity.trainee.Trainee;
+import com.github.amangusss.gym_application.exception.TraineeNotFoundException;
+import com.github.amangusss.gym_application.exception.ValidationException;
+import com.github.amangusss.gym_application.repository.TraineeDAO;
+import com.github.amangusss.gym_application.repository.TrainerDAO;
 import com.github.amangusss.gym_application.service.TraineeService;
+import com.github.amangusss.gym_application.util.constants.LoggerConstants;
+import com.github.amangusss.gym_application.util.constants.ValidationConstants;
 import com.github.amangusss.gym_application.util.PasswordGenerator;
 import com.github.amangusss.gym_application.util.UsernameGenerator;
+
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -47,18 +52,18 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     public Trainee createTrainee(Trainee trainee) {
         if (trainee == null) {
-            throw new IllegalArgumentException("Trainee cannot be null");
+            throw new ValidationException(ValidationConstants.TRAINEE_NULL);
         }
 
         if (trainee.getFirstName() == null || trainee.getFirstName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Trainee first name cannot be null or empty");
+            throw new ValidationException(ValidationConstants.TRAINEE_FIRST_NAME_NULL);
         }
 
         if (trainee.getLastName() == null || trainee.getLastName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Trainee last name cannot be null or empty");
+            throw new ValidationException(ValidationConstants.TRAINEE_LAST_NAME_NULL);
         }
 
-        logger.info("Creating trainee: {} {}", trainee.getFirstName(), trainee.getLastName());
+        logger.info(LoggerConstants.TRAINEE_CREATING, trainee.getFirstName(), trainee.getLastName());
 
         generateCredentials(trainee);
 
@@ -67,7 +72,7 @@ public class TraineeServiceImpl implements TraineeService {
         }
 
         Trainee savedTrainee = traineeDAO.save(trainee);
-        logger.info("Trainee created successfully with username: {}", savedTrainee.getUsername());
+        logger.info(LoggerConstants.TRAINEE_CREATED, savedTrainee.getUsername());
 
         return savedTrainee;
     }
@@ -75,18 +80,18 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     public Trainee updateTrainee(Trainee trainee) {
         if (trainee == null) {
-            throw new IllegalArgumentException("Trainee cannot be null");
+            throw new ValidationException(ValidationConstants.TRAINEE_NULL);
         }
 
         if (trainee.getId() == null) {
-            throw new IllegalArgumentException("Trainee id cannot be null");
+            throw new ValidationException(ValidationConstants.TRAINEE_ID_NULL);
         }
 
-        logger.info("Updating trainee: {} {}", trainee.getFirstName(), trainee.getLastName());
+        logger.info(LoggerConstants.TRAINEE_UPDATING, trainee.getFirstName(), trainee.getLastName());
 
         Trainee existingTrainee = traineeDAO.findById(trainee.getId());
         if (existingTrainee == null) {
-            throw new IllegalArgumentException("Trainee with id " + trainee.getId() + " not found");
+            throw new TraineeNotFoundException(String.format(ValidationConstants.TRAINEE_NOT_FOUND_BY_ID, trainee.getId()));
         }
 
         if (!existingTrainee.getFirstName().equals(trainee.getFirstName())
@@ -102,11 +107,15 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     public boolean deleteTrainee(Long traineeId) {
         if (traineeId == null) {
-            throw new IllegalArgumentException("Trainee cannot be null");
+            throw new ValidationException(ValidationConstants.TRAINEE_ID_NULL);
         }
 
         Trainee trainee = traineeDAO.findById(traineeId);
-        logger.info("Deleting trainee: {} {}", trainee.getFirstName(), trainee.getLastName());
+        if (trainee == null) {
+            throw new TraineeNotFoundException(String.format(ValidationConstants.TRAINEE_NOT_FOUND_BY_ID, traineeId));
+        }
+        
+        logger.info(LoggerConstants.TRAINEE_DELETING, trainee.getFirstName(), trainee.getLastName());
         return traineeDAO.deleteById(trainee.getId());
     }
 

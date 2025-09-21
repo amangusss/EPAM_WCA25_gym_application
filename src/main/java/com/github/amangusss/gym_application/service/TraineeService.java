@@ -1,6 +1,6 @@
 package com.github.amangusss.gym_application.service;
 
-import com.github.amangusss.gym_application.entity.Trainee;
+import com.github.amangusss.gym_application.entity.trainee.Trainee;
 
 import java.util.List;
 

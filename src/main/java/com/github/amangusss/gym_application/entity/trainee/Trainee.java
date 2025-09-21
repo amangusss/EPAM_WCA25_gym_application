@@ -1,4 +1,6 @@
-package com.github.amangusss.gym_application.entity;
+package com.github.amangusss.gym_application.entity.trainee;
+
+import com.github.amangusss.gym_application.entity.User;
 
 import java.time.LocalDate;
 import java.util.HashSet;

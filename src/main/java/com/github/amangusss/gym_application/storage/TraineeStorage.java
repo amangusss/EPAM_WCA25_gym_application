@@ -1,9 +1,10 @@
 package com.github.amangusss.gym_application.storage;
 
-import com.github.amangusss.gym_application.entity.Trainee;
+import com.github.amangusss.gym_application.entity.trainee.Trainee;
+import com.github.amangusss.gym_application.util.constants.ConfigConstants;
 import org.springframework.stereotype.Component;
 
-@Component("traineeStorage")
+@Component(ConfigConstants.BEAN_TRAINEE_STORAGE)
 public class TraineeStorage extends InMemoryStorage<Trainee>{
 
     @Override
