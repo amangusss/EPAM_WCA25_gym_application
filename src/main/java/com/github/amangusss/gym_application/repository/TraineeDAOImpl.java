@@ -94,7 +94,7 @@ public class TraineeDAOImpl implements TraineeDAO {
     }
 
     @Override
-    public Iterable<Trainee> findAll() {
+    public List<Trainee> findAll() {
         logger.debug("Finding all trainees");
         List<Trainee> trainees = traineeStorage.findAll();
         logger.info("Found {} trainees", trainees.size());
@@ -123,7 +123,7 @@ public class TraineeDAOImpl implements TraineeDAO {
     }
 
     @Override
-    public Iterable<Trainee> findActiveTrainees() {
+    public List<Trainee> findActiveTrainees() {
         logger.debug("Finding all active trainees");
         List<Trainee> trainees = traineeStorage.findAll().stream()
                 .filter(User::isActive)
