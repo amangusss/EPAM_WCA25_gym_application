@@ -1,6 +1,6 @@
-package com.github.amangusss.gym_application.repository.dao;
+package com.github.amangusss.gym_application.repository;
 
-import com.github.amangusss.gym_application.entity.Trainer;
+import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.TrainingType;
 
 import java.util.List;

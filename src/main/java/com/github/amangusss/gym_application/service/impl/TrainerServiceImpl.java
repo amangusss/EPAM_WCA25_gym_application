@@ -1,11 +1,16 @@
 package com.github.amangusss.gym_application.service.impl;
 
-import com.github.amangusss.gym_application.entity.Trainer;
-import com.github.amangusss.gym_application.repository.dao.TraineeDAO;
-import com.github.amangusss.gym_application.repository.dao.TrainerDAO;
+import com.github.amangusss.gym_application.entity.trainer.Trainer;
+import com.github.amangusss.gym_application.exception.TrainerNotFoundException;
+import com.github.amangusss.gym_application.exception.ValidationException;
+import com.github.amangusss.gym_application.repository.TraineeDAO;
+import com.github.amangusss.gym_application.repository.TrainerDAO;
 import com.github.amangusss.gym_application.service.TrainerService;
 import com.github.amangusss.gym_application.util.PasswordGenerator;
 import com.github.amangusss.gym_application.util.UsernameGenerator;
+import com.github.amangusss.gym_application.util.constants.LoggerConstants;
+import com.github.amangusss.gym_application.util.constants.ValidationConstants;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,22 +53,22 @@ public class TrainerServiceImpl implements TrainerService {
     @Override
     public Trainer createTrainer(Trainer trainer) {
         if (trainer == null) {
-            throw new IllegalArgumentException("Trainer cannot be null");
+            throw new ValidationException(ValidationConstants.TRAINER_NULL);
         }
 
         if (trainer.getFirstName() == null || trainer.getFirstName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Trainer first name cannot be null or empty");
+            throw new ValidationException(ValidationConstants.TRAINER_FIRST_NAME_NULL);
         }
 
         if (trainer.getLastName() == null || trainer.getLastName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Trainer last name cannot be null or empty");
+            throw new ValidationException(ValidationConstants.TRAINER_LAST_NAME_NULL);
         }
 
         if (trainer.getSpecialization() == null) {
-            throw new IllegalArgumentException("Trainer specialization cannot be null");
+            throw new ValidationException(ValidationConstants.TRAINER_SPECIALIZATION_NULL);
         }
 
-        logger.info("Creating trainer: {} {}", trainer.getFirstName(), trainer.getLastName());
+        logger.info(LoggerConstants.TRAINER_CREATING, trainer.getFirstName(), trainer.getLastName());
 
         generateCredentials(trainer);
 
@@ -72,25 +77,25 @@ public class TrainerServiceImpl implements TrainerService {
         }
 
         Trainer savedTrainer = trainerDAO.save(trainer);
-        logger.info("Trainer created successfully with username: {}", savedTrainer.getUsername());
+        logger.info(LoggerConstants.TRAINER_CREATED, savedTrainer.getUsername());
         return savedTrainer;
     }
 
     @Override
     public Trainer updateTrainer(Trainer trainer) {
         if (trainer == null) {
-            throw new IllegalArgumentException("Trainer cannot be null");
+            throw new ValidationException(ValidationConstants.TRAINER_NULL);
         }
 
         if (trainer.getId() == null) {
-            throw new IllegalArgumentException("Trainer id cannot be null");
+            throw new ValidationException(ValidationConstants.TRAINER_ID_NULL);
         }
 
-        logger.info("Updating trainer: {} {}", trainer.getFirstName(), trainer.getLastName());
+        logger.info(LoggerConstants.TRAINER_UPDATING, trainer.getFirstName(), trainer.getLastName());
 
         Trainer existingTrainer = trainerDAO.findById(trainer.getId());
         if (existingTrainer == null) {
-            throw new IllegalArgumentException("Trainer with id " + trainer.getId() + " not found");
+            throw new TrainerNotFoundException(String.format(ValidationConstants.TRAINER_NOT_FOUND_BY_ID, trainer.getId()));
         }
 
         if (!existingTrainer.getFirstName().equals(trainer.getFirstName())

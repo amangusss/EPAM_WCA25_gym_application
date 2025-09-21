@@ -1,10 +1,15 @@
-package com.github.amangusss.gym_application.repository;
+package com.github.amangusss.gym_application.repository.impl;
 
-import com.github.amangusss.gym_application.entity.Trainer;
+import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.TrainingType;
 import com.github.amangusss.gym_application.entity.User;
-import com.github.amangusss.gym_application.repository.dao.TrainerDAO;
+import com.github.amangusss.gym_application.exception.TrainerNotFoundException;
+import com.github.amangusss.gym_application.exception.ValidationException;
+import com.github.amangusss.gym_application.repository.TrainerDAO;
 import com.github.amangusss.gym_application.storage.TrainerStorage;
+import com.github.amangusss.gym_application.util.constants.LoggerConstants;
+import com.github.amangusss.gym_application.util.constants.ValidationConstants;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,32 +33,32 @@ public class TrainerDAOImpl implements TrainerDAO {
     @Override
     public Trainer save(Trainer trainer) {
         if (trainer == null) {
-            throw new IllegalArgumentException("trainer cannot be null");
+            throw new ValidationException(ValidationConstants.TRAINER_NULL);
         }
 
-        logger.debug("Saving trainer: {}", trainer);
+        logger.debug(LoggerConstants.DAO_SAVING, "trainer", trainer.getUsername());
         Trainer saved = trainerStorage.save(trainer);
-        logger.info("Trainer saved successfully with id: {}", saved.getId());
+        logger.info(LoggerConstants.DAO_SAVED, "Trainer", saved.getId());
         return  saved;
     }
 
     @Override
     public Trainer update(Trainer trainer) {
         if (trainer == null) {
-            throw new IllegalArgumentException("trainer cannot be null");
+            throw new ValidationException(ValidationConstants.TRAINER_NULL);
         }
 
         if (trainer.getId() == null) {
-            throw new IllegalArgumentException("trainer id cannot be null");
+            throw new ValidationException(ValidationConstants.TRAINER_ID_NULL);
         }
 
         if (!trainerStorage.existsById(trainer.getId())) {
-            throw new IllegalArgumentException("trainer does not exist");
+            throw new TrainerNotFoundException(String.format(ValidationConstants.TRAINER_NOT_FOUND_BY_ID, trainer.getId()));
         }
 
-        logger.debug("Updating trainer: {}", trainer);
+        logger.debug(LoggerConstants.DAO_UPDATING, "trainer", trainer.getUsername());
         Trainer updated = trainerStorage.update(trainer);
-        logger.info("Trainer updated: {}", updated.getUsername());
+        logger.info(LoggerConstants.DAO_UPDATED, "Trainer", updated.getId());
         return updated;
     }
 
@@ -63,13 +68,13 @@ public class TrainerDAOImpl implements TrainerDAO {
             return null;
         }
 
-        logger.debug("Finding trainer: {}", id);
+        logger.debug(LoggerConstants.DAO_FINDING, "trainer", id);
         Trainer trainer = trainerStorage.findById(id);
 
         if (trainer != null) {
-            logger.info("Found trainer: {}", trainer.getUsername());
+            logger.info(LoggerConstants.DAO_FOUND, "Trainer", id);
         } else {
-            logger.error("Trainer with id {} not found", id);
+            logger.debug(LoggerConstants.DAO_NOT_FOUND, "Trainer", id);
         }
 
         return trainer;
@@ -77,9 +82,9 @@ public class TrainerDAOImpl implements TrainerDAO {
 
     @Override
     public List<Trainer> findAll() {
-        logger.debug("Finding all trainers");
+        logger.debug(LoggerConstants.DAO_FINDING_ALL, "trainers");
         List<Trainer> trainers = trainerStorage.findAll();
-        logger.info("Found {} trainers", trainers.size());
+        logger.info(LoggerConstants.DAO_FOUND_ALL, trainers.size(), "trainers");
         return trainers;
     }
 
@@ -89,16 +94,16 @@ public class TrainerDAOImpl implements TrainerDAO {
             return null;
         }
 
-        logger.debug("Finding trainer: {}", username);
+        logger.debug(LoggerConstants.DAO_FINDING_BY_USERNAME, "trainer", username);
         Trainer trainer = trainerStorage.findAll().stream()
                 .filter(t -> t.getUsername().equals(username))
                 .findFirst()
                 .orElse(null);
 
         if (trainer == null) {
-            logger.error("Trainer with id {} not found", username);
+            logger.debug(LoggerConstants.DAO_NOT_FOUND_BY_USERNAME, "Trainer", username);
         } else {
-            logger.info("Found trainer: {}", trainer.getUsername());
+            logger.info(LoggerConstants.DAO_FOUND_BY_USERNAME, "Trainer", username);
         }
 
         return trainer;
@@ -110,22 +115,22 @@ public class TrainerDAOImpl implements TrainerDAO {
             return new ArrayList<>();
         }
 
-        logger.debug("Finding trainers by specialization: {}", specialization);
+        logger.debug(LoggerConstants.DAO_FINDING_BY_SPECIALIZATION, "trainers", specialization);
         List<Trainer> trainers = trainerStorage.findAll().stream()
                 .filter(t -> t.getSpecialization().equals(specialization))
                 .toList();
 
-        logger.debug("Found {} trainers with specialization {}", trainers.size(), specialization);
+        logger.debug(LoggerConstants.DAO_FOUND_BY_SPECIALIZATION, trainers.size(), "trainers", specialization);
         return trainers;
     }
 
     @Override
     public List<Trainer> findActiveTrainers() {
-        logger.debug("Finding active trainers");
+        logger.debug(LoggerConstants.DAO_FINDING_ACTIVE, "trainers");
         List<Trainer> trainers = trainerStorage.findAll().stream()
                 .filter(User::isActive)
                 .toList();
-        logger.info("Found {} active trainers", trainers.size());
+        logger.info(LoggerConstants.DAO_FOUND_ACTIVE, trainers.size(), "trainers");
         return trainers;
     }
 
@@ -136,7 +141,7 @@ public class TrainerDAOImpl implements TrainerDAO {
         }
 
         boolean exists = findByUsername(username) != null;
-        logger.info("Trainer with username {} exists: {}", username, exists);
+        logger.debug(LoggerConstants.DAO_EXISTS_BY_USERNAME, "Trainer", username, exists);
         return exists;
     }
 }

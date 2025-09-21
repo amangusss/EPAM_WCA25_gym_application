@@ -1,9 +1,13 @@
-package com.github.amangusss.gym_application.entity;
+package com.github.amangusss.gym_application.entity.trainer;
+
+import com.github.amangusss.gym_application.entity.TrainingType;
+import com.github.amangusss.gym_application.entity.User;
+import com.github.amangusss.gym_application.entity.trainee.Trainee;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class Trainer extends User{
+public class Trainer extends User {
 
     private TrainingType specialization;
     private Set<Trainee> traineeId;
