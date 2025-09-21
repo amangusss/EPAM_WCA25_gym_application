@@ -17,13 +17,11 @@ import java.util.List;
 public class TrainerDAOImpl implements TrainerDAO {
 
     public static final Logger logger = LoggerFactory.getLogger(TrainerDAOImpl.class);
+
     private final TrainerStorage trainerStorage;
 
-    private TrainerStorage traineeStorage;
-
     @Autowired
-    public TrainerDAOImpl(TrainerStorage traineeStorage, TrainerStorage trainerStorage) {
-        this.traineeStorage = traineeStorage;
+    public TrainerDAOImpl(TrainerStorage trainerStorage) {
         this.trainerStorage = trainerStorage;
     }
 
@@ -34,7 +32,7 @@ public class TrainerDAOImpl implements TrainerDAO {
         }
 
         logger.debug("Saving trainer: {}", trainer);
-        Trainer saved = traineeStorage.save(trainer);
+        Trainer saved = trainerStorage.save(trainer);
         logger.info("Trainer saved successfully with id: {}", saved.getId());
         return  saved;
     }
@@ -78,7 +76,7 @@ public class TrainerDAOImpl implements TrainerDAO {
     }
 
     @Override
-    public Iterable<Trainer> findAll() {
+    public List<Trainer> findAll() {
         logger.debug("Finding all trainers");
         List<Trainer> trainers = trainerStorage.findAll();
         logger.info("Found {} trainers", trainers.size());
@@ -107,7 +105,7 @@ public class TrainerDAOImpl implements TrainerDAO {
     }
 
     @Override
-    public Iterable<Trainer> findBySpecialization(TrainingType specialization) {
+    public List<Trainer> findBySpecialization(TrainingType specialization) {
         if (specialization == null) {
             return new ArrayList<>();
         }
@@ -122,7 +120,7 @@ public class TrainerDAOImpl implements TrainerDAO {
     }
 
     @Override
-    public Iterable<Trainer> findActiveTrainers() {
+    public List<Trainer> findActiveTrainers() {
         logger.debug("Finding active trainers");
         List<Trainer> trainers = trainerStorage.findAll().stream()
                 .filter(User::isActive)
@@ -138,7 +136,7 @@ public class TrainerDAOImpl implements TrainerDAO {
         }
 
         boolean exists = findByUsername(username) != null;
-        logger.info("Trainee with username {} exists: {}", username, exists);
+        logger.info("Trainer with username {} exists: {}", username, exists);
         return exists;
     }
 }
