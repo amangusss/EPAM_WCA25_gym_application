@@ -1,12 +1,15 @@
 package com.github.amangusss.gym_application.entity;
 
+import com.github.amangusss.gym_application.exception.ValidationException;
+import com.github.amangusss.gym_application.util.constants.ConfigConstants;
+
 public enum TrainingType {
 
-    FITNESS("fitness"),
-    YOGA("yoga"),
-    ZUMBA("zumba"),
-    STRETCHING("stretching"),
-    RESISTANCE("resistance");
+    FITNESS(ConfigConstants.TRAINING_TYPE_FITNESS),
+    YOGA(ConfigConstants.TRAINING_TYPE_YOGA),
+    ZUMBA(ConfigConstants.TRAINING_TYPE_ZUMBA),
+    STRETCHING(ConfigConstants.TRAINING_TYPE_STRETCHING),
+    RESISTANCE(ConfigConstants.TRAINING_TYPE_RESISTANCE);
 
     private final String displayName;
 
@@ -24,7 +27,7 @@ public enum TrainingType {
                 return type;
             }
         }
-        throw new IllegalArgumentException("No TrainingType with displayName " + displayName);
+        throw new ValidationException(ConfigConstants.NO_TRAINING_TYPE + displayName);
     }
 
     @Override

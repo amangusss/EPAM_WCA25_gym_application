@@ -7,10 +7,10 @@
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/gym-crm.log</file>
+        <file>logs/gym-application.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
 
-            <fileNamePattern>logs/gym-crm.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>logs/gym-application.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
@@ -18,10 +18,10 @@
         </encoder>
     </appender>
 
-    <logger name="com.gym.application" level="DEBUG"/>
+    <logger name="com.github.amangusss.gym_application" level="DEBUG"/>
     <logger name="org.springframework" level="INFO"/>
 
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </root>
