@@ -1,0 +1,2 @@
+Mike,Johnson,Mike.Johnson,trainer123,true,fitness
+Sarah,Wilson,Sarah.Wilson,trainer456,true,yoga
