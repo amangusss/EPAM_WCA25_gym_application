@@ -3,6 +3,11 @@ package com.github.amangusss.gym_application.entity;
 import com.github.amangusss.gym_application.exception.ValidationException;
 import com.github.amangusss.gym_application.util.constants.ConfigConstants;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
 public enum TrainingType {
 
     FITNESS(ConfigConstants.TRAINING_TYPE_FITNESS),
@@ -12,14 +17,6 @@ public enum TrainingType {
     RESISTANCE(ConfigConstants.TRAINING_TYPE_RESISTANCE);
 
     private final String displayName;
-
-    TrainingType(String displayName) {
-        this.displayName = displayName;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
 
     public static TrainingType fromDisplayName(String displayName) {
         for (TrainingType type : values()) {

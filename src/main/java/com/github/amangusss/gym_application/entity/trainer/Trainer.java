@@ -4,50 +4,39 @@ import com.github.amangusss.gym_application.entity.TrainingType;
 import com.github.amangusss.gym_application.entity.User;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
+
 import java.util.HashSet;
 import java.util.Set;
 
+@Getter
+@Setter
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
+@Entity
+@Table(name = "trainers")
 public class Trainer extends User {
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private TrainingType specialization;
-    private Set<Trainee> traineeId;
 
-    public Trainer() {
-        super();
-        this.traineeId = new HashSet<>();
-    }
-
-    public Trainer(String firstName, String lastName, TrainingType specialization) {
-        super(firstName, lastName);
-        this.specialization = specialization;
-        this.traineeId = new HashSet<>();
-    }
-
-    public Set<Trainee> getTraineeId() {
-        return traineeId;
-    }
-
-    public void setTraineeId(Set<Trainee> traineeId) {
-        this.traineeId = traineeId;
-    }
-
-    public TrainingType getSpecialization() {
-        return specialization;
-    }
-
-    public void setSpecialization(TrainingType specialization) {
-        this.specialization = specialization;
-    }
-
-    @Override
-    public String toString() {
-        return "Trainer{" +
-                "id=" + getId() +
-                ", firstName='" + getFirstName() + '\'' +
-                ", lastName='" + getLastName() + '\'' +
-                ", username='" + getUsername() + '\'' +
-                ", isActive=" + isActive() +
-                ", specialization=" + specialization +
-                '}';
-    }
+    @ManyToMany(mappedBy = "trainers", fetch = FetchType.LAZY)
+    @ToString.Exclude
+    private Set<Trainee> trainees = new HashSet<>();
 }

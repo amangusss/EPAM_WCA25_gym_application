@@ -2,7 +2,6 @@ package com.github.amangusss.gym_application.entity;
 
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
-import com.github.amangusss.gym_application.entity.trainer.TrainerBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
