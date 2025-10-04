@@ -1,150 +1,159 @@
 package com.github.amangusss.gym_application.service.impl;
 
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
-import com.github.amangusss.gym_application.exception.TrainerNotFoundException;
-import com.github.amangusss.gym_application.exception.ValidationException;
-import com.github.amangusss.gym_application.repository.TraineeDAO;
-import com.github.amangusss.gym_application.repository.TrainerDAO;
+import com.github.amangusss.gym_application.entity.training.Training;
+import com.github.amangusss.gym_application.repository.TrainerRepository;
 import com.github.amangusss.gym_application.service.TrainerService;
-import com.github.amangusss.gym_application.util.PasswordGenerator;
-import com.github.amangusss.gym_application.util.UsernameGenerator;
-import com.github.amangusss.gym_application.util.constants.LoggerConstants;
-import com.github.amangusss.gym_application.util.constants.ValidationConstants;
+import com.github.amangusss.gym_application.util.credentials.PasswordGenerator;
+import com.github.amangusss.gym_application.util.credentials.UsernameGenerator;
+import com.github.amangusss.gym_application.util.validation.service.trainer.TrainerServiceValidation;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
 
 @Service
+@Transactional
+@RequiredArgsConstructor
 public class TrainerServiceImpl implements TrainerService {
 
     public static final Logger logger = LoggerFactory.getLogger(TrainerServiceImpl.class);
 
-    private TrainerDAO trainerDAO;
-    private TraineeDAO traineeDAO;
-    private UsernameGenerator usernameGenerator;
-    private PasswordGenerator passwordGenerator;
-
-    @Autowired
-    public void setTrainerDAO(TrainerDAO trainerDAO) {
-        this.trainerDAO = trainerDAO;
-    }
-
-    @Autowired
-    public void setTraineeDAO(TraineeDAO traineeDAO) {
-        this.traineeDAO = traineeDAO;
-    }
-
-    @Autowired
-    public void setUsernameGenerator(UsernameGenerator usernameGenerator) {
-        this.usernameGenerator = usernameGenerator;
-    }
-
-    @Autowired
-    public void setPasswordGenerator(PasswordGenerator passwordGenerator) {
-        this.passwordGenerator = passwordGenerator;
-    }
+    private final TrainerRepository trainerRepository;
+    private final UsernameGenerator usernameGenerator;
+    private final PasswordGenerator passwordGenerator;
+    private final TrainerServiceValidation trainerServiceValidation;
 
     @Override
     public Trainer createTrainer(Trainer trainer) {
-        if (trainer == null) {
-            throw new ValidationException(ValidationConstants.TRAINER_NULL);
-        }
-
-        if (trainer.getFirstName() == null || trainer.getFirstName().trim().isEmpty()) {
-            throw new ValidationException(ValidationConstants.TRAINER_FIRST_NAME_NULL);
-        }
-
-        if (trainer.getLastName() == null || trainer.getLastName().trim().isEmpty()) {
-            throw new ValidationException(ValidationConstants.TRAINER_LAST_NAME_NULL);
-        }
-
-        if (trainer.getSpecialization() == null) {
-            throw new ValidationException(ValidationConstants.TRAINER_SPECIALIZATION_NULL);
-        }
-
-        logger.info(LoggerConstants.TRAINER_CREATING, trainer.getFirstName(), trainer.getLastName());
-
+        logger.debug("Creating trainer profile: {} {}", trainer.getFirstName(), trainer.getLastName());
+        trainerServiceValidation.validateTrainerForCreationOrUpdate(trainer);
         generateCredentials(trainer);
 
-        if (!trainer.isActive()) {
-            trainer.setActive(true);
-        }
+        trainer.setActive(true);
 
-        Trainer savedTrainer = trainerDAO.save(trainer);
-        logger.info(LoggerConstants.TRAINER_CREATED, savedTrainer.getUsername());
+        Trainer savedTrainer = trainerRepository.save(trainer);
+        logger.info("Successfully created trainer profile with username: {}", savedTrainer.getUsername());
         return savedTrainer;
     }
 
     @Override
-    public Trainer updateTrainer(Trainer trainer) {
-        if (trainer == null) {
-            throw new ValidationException(ValidationConstants.TRAINER_NULL);
-        }
+    @Transactional(readOnly = true)
+    public Trainer findTrainerByUsername(String username, String password) {
+        logger.debug("Finding trainer by username: {}", username);
+        authenticationCheck(username, password);
 
-        if (trainer.getId() == null) {
-            throw new ValidationException(ValidationConstants.TRAINER_ID_NULL);
-        }
+        Trainer trainer = trainerRepository.findByUsername(username);
+        logger.info("Found trainer with username: {}", username);
+        return trainer;
+    }
 
-        logger.info(LoggerConstants.TRAINER_UPDATING, trainer.getFirstName(), trainer.getLastName());
+    @Override
+    public Trainer updateTrainer(String username, String password, Trainer trainer) {
+        logger.debug("Updating trainer profile: {}", username);
+        authenticationCheck(username, password);
+        trainerServiceValidation.validateTrainerForCreationOrUpdate(trainer);
 
-        Trainer existingTrainer = trainerDAO.findById(trainer.getId());
-        if (existingTrainer == null) {
-            throw new TrainerNotFoundException(String.format(ValidationConstants.TRAINER_NOT_FOUND_BY_ID, trainer.getId()));
-        }
+        Trainer existingTrainer = findTrainerByUsername(username, password);
 
-        if (!existingTrainer.getFirstName().equals(trainer.getFirstName())
-                || !existingTrainer.getLastName().equals(trainer.getLastName())) {
-            generateCredentials(trainer);
+        existingTrainer.setFirstName(trainer.getFirstName());
+        existingTrainer.setLastName(trainer.getLastName());
+        existingTrainer.setSpecialization(trainer.getSpecialization());
+
+        Trainer updatedTrainer = trainerRepository.update(existingTrainer);
+        logger.info("Successfully updated trainer profile with username: {}", updatedTrainer.getUsername());
+        return updatedTrainer;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean authenticateTrainer(String username, String password) {
+        logger.debug("Authenticating trainer: {}", username);
+
+        boolean authenticated = trainerRepository.existsByUsernameAndPassword(username, password);
+
+        if (authenticated) {
+            logger.info("Trainer authenticated successfully: {}", username);
         } else {
-            trainer.setUsername(existingTrainer.getUsername());
-            trainer.setPassword(existingTrainer.getPassword());
+            logger.warn("Authentication failed for trainer: {}", username);
         }
 
-        return trainerDAO.update(trainer);
+        return authenticated;
     }
 
     @Override
-    public Trainer findTrainerById(Long id) {
-        return trainerDAO.findById(id);
+    public Trainer changeTrainerPassword(String username, String oldPassword, String newPassword) {
+        logger.debug("Changing password for trainer: {}", username);
+        authenticationCheck(username, oldPassword);
+        trainerServiceValidation.validatePasswordChange(oldPassword, newPassword);
+
+        Trainer updatedTrainer = trainerRepository.updatePasswordByUsername(username, oldPassword, newPassword);
+        logger.info("Successfully changed password for trainer: {}", username);
+        return updatedTrainer;
     }
 
     @Override
-    public List<Trainer> findAllTrainers() {
-        return trainerDAO.findAll();
+    public Trainer activateTrainer(String username, String password) {
+        logger.debug("Activating trainer: {}", username);
+        authenticationCheck(username, password);
+
+        Trainer trainer = trainerRepository.updateActiveStatusByUsername(username, true);
+        logger.info("Successfully activated trainer: {}", username);
+        return trainer;
+    }
+
+    @Override
+    public Trainer deactivateTrainer(String username, String password) {
+        logger.debug("Deactivating trainer: {}", username);
+        authenticationCheck(username, password);
+
+        Trainer trainer = trainerRepository.updateActiveStatusByUsername(username, false);
+        logger.info("Successfully deactivated trainer: {}", username);
+        return trainer;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Training> getTrainerTrainingsList(String username, String password, LocalDate fromDate, LocalDate toDate, String traineeName) {
+        logger.debug("Getting trainings list for trainer: {} with filters", username);
+        authenticationCheck(username, password);
+        trainerServiceValidation.validateDateRange(fromDate, toDate);
+
+        List<Training> trainings = trainerRepository.findTrainingsByUsername(username, fromDate, toDate, traineeName);
+        logger.info("Retrieved {} trainings for trainer: {}", trainings.size(), username);
+        return trainings;
     }
 
     private void generateCredentials(Trainer trainer) {
-        Set<String> existingUsernames = getAllExistingUsernames();
-
-        String username = usernameGenerator.generateUsername(
-                trainer.getFirstName(), trainer.getLastName(), existingUsernames);
+        String username = usernameGenerator.generateUsername(trainer.getFirstName(), trainer.getLastName(), this::usernameExists);
         trainer.setUsername(username);
 
         String password = passwordGenerator.generatePassword();
         trainer.setPassword(password);
+
+        logger.debug("Generated credentials for trainer - username: {}", username);
     }
 
-    private Set<String> getAllExistingUsernames() {
-        Set<String> usernames = new HashSet<>();
+    private boolean usernameExists(String username) {
+        try {
+            Trainer trainer = trainerRepository.findByUsername(username);
+            return trainer != null;
+        } catch (Exception e) {
+            logger.debug("Username does not exist: {}", username);
+            return false;
+        }
+    }
 
-        traineeDAO.findAll().forEach(t -> {
-            if (t.getUsername() != null) {
-                usernames.add(t.getUsername());
-            }
-        });
-
-        trainerDAO.findAll().forEach(t -> {
-            if (t.getUsername() != null) {
-                usernames.add(t.getUsername());
-            }
-        });
-
-        return usernames;
+    private void authenticationCheck(String username, String password) {
+        if (!trainerRepository.existsByUsernameAndPassword(username, password)) {
+            logger.error("Authentication failed for trainer: {}", username);
+            throw new com.github.amangusss.gym_application.exception.AuthenticationException(
+                    "Authentication failed for trainer: " + username);
+        }
     }
 }

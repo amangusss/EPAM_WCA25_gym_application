@@ -1,201 +1,249 @@
 package com.github.amangusss.gym_application;
 
 import com.github.amangusss.gym_application.config.GymApplicationConfig;
+import com.github.amangusss.gym_application.entity.TrainingType;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.training.Training;
-import com.github.amangusss.gym_application.entity.TrainingType;
 import com.github.amangusss.gym_application.service.facade.GymFacade;
-import com.github.amangusss.gym_application.util.constants.ConfigConstants;
-import com.github.amangusss.gym_application.util.constants.LoggerConstants;
-import com.github.amangusss.gym_application.util.constants.DemoConstants;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class GymApplication {
 
-    public static final Logger logger = LoggerFactory.getLogger(GymApplication.class);
+    private static final Logger logger = LoggerFactory.getLogger(GymApplication.class);
 
     public static void main(String[] args) {
-        logger.info(LoggerConstants.APP_STARTING);
         try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(GymApplicationConfig.class)) {
-            logger.info(LoggerConstants.APP_CONTEXT_INITIALIZED);
+            logger.info("Application context initialized successfully");
 
-            demoApplication(context);
-
-            logger.info(LoggerConstants.APP_FINISHED);
+            GymFacade gymFacade = context.getBean(GymFacade.class);
+            demonstrateFullFunctionality(gymFacade);
         } catch (Exception e) {
-            logger.error(LoggerConstants.APP_FAILED, e);
-            System.exit(ConfigConstants.SYSTEM_EXIT_ERROR);
+            logger.error("Application failed with error", e);
+            System.exit(1);
         }
     }
 
-    private static void demoApplication(AnnotationConfigApplicationContext context) {
-        logger.info(LoggerConstants.DEMO_STARTED);
+    private static void demonstrateFullFunctionality(GymFacade gymFacade) {
+        logger.info("Demo started...");
 
-        GymFacade gymFacade = context.getBean(GymFacade.class);
+        Trainee trainee = demoCreateTrainee(gymFacade);
+        Trainer trainer = demoCreateTrainer(gymFacade);
 
-        demoTraineeOperations(gymFacade);
-        demoTrainerOperations(gymFacade);
-        demoTrainingOperations(gymFacade);
-        demoDeleteOperations(gymFacade);
+        demoAuthentication(gymFacade, trainee, trainer);
+        demoUpdateProfiles(gymFacade, trainee, trainer);
+        demoPasswordChange(gymFacade, trainee, trainer);
+        demoAddTraining(gymFacade, trainee, trainer);
+        demoGetTrainings(gymFacade, trainee, trainer);
+        demoGetUnassignedTrainers(gymFacade, trainee);
+        demoUpdateTrainersList(gymFacade, trainee, trainer);
+        demoActivateDeactivate(gymFacade, trainee, trainer);
+        demoDeleteTrainee(gymFacade, trainee);
+
+        logger.info("Demo completed.");
     }
 
-    private static void demoTraineeOperations(GymFacade gymFacade) {
-        logger.info(LoggerConstants.DEMO_TRAINEE_STARTED);
-
-        Trainee savedTrainee = gymFacade.createTrainee(
-                DemoConstants.TRAINEE_FIRST_NAME, 
-                DemoConstants.TRAINEE_LAST_NAME, 
-                LocalDate.of(DemoConstants.TRAINEE_BIRTH_YEAR, DemoConstants.TRAINEE_BIRTH_MONTH, DemoConstants.TRAINEE_BIRTH_DAY), 
-                DemoConstants.TRAINEE_ADDRESS_1
+    private static Trainee demoCreateTrainee(GymFacade gymFacade) {
+        Trainee trainee = gymFacade.createTrainee(
+                "Aman",
+                "Nazarkulov",
+                LocalDate.of(2004, 2, 14),
+                "Isakeev st. 18/10 Block 15"
         );
-        logger.info(LoggerConstants.TRAINEE_CREATED_DETAILS,
-                savedTrainee.getFirstName() + " " + savedTrainee.getLastName(),
-                savedTrainee.getUsername(),
-                savedTrainee.getPassword());
 
+        logger.info("Trainee created: {} {} (username: {}, password: {})",
+                trainee.getFirstName(), trainee.getLastName(),
+                trainee.getUsername(), trainee.getPassword());
+
+        return trainee;
+    }
+
+    private static Trainer demoCreateTrainer(GymFacade gymFacade) {
+        Trainer trainer = gymFacade.createTrainer(
+                "Dastan",
+                "Ibraimov",
+                TrainingType.FITNESS
+        );
+
+        logger.info("Trainer created: {} {} (username: {}, password: {}, specialization: {})",
+                trainer.getFirstName(), trainer.getLastName(),
+                trainer.getUsername(), trainer.getPassword(), trainer.getSpecialization());
+
+        return trainer;
+    }
+
+    private static void demoAuthentication(GymFacade gymFacade, Trainee trainee, Trainer trainer) {
+        boolean traineeAuth = gymFacade.authenticateTrainee(trainee.getUsername(), trainee.getPassword());
+        logger.info("Trainee authentication: {}", traineeAuth ? "success" : "failed");
+
+        boolean trainerAuth = gymFacade.authenticateTrainer(trainer.getUsername(), trainer.getPassword());
+        logger.info("Trainer authentication: {}", trainerAuth ? "success" : "failed");
+
+        boolean invalidAuth = gymFacade.authenticateTrainee(trainee.getUsername(), "wrong_password");
+        logger.info("Invalid authentication test: {}", invalidAuth ? "failed (should be false)" : "success");
+    }
+
+    private static void demoUpdateProfiles(GymFacade gymFacade, Trainee trainee, Trainer trainer) {
         Trainee updatedTrainee = gymFacade.updateTrainee(
-                savedTrainee.getId(),
-                savedTrainee.getFirstName(),
-                savedTrainee.getLastName(),
-                savedTrainee.getDateOfBirth(),
-                DemoConstants.TRAINEE_ADDRESS_2,
-                true
+                trainee.getUsername(),
+                trainee.getPassword(),
+                "Aman",
+                "Nazarkulov",
+                LocalDate.of(2004, 2, 14),
+                "Erkindik boulevard 8"
         );
-        logger.info(LoggerConstants.TRAINEE_UPDATED_ADDRESS, updatedTrainee.getAddress());
+        logger.info("Trainee profile updated. New address: {}", updatedTrainee.getAddress());
 
-        List<Trainee> trainees = gymFacade.findAllTrainees();
-        logger.info(LoggerConstants.TRAINEES_FOUND, trainees.size());
-        
-        if (!trainees.isEmpty()) {
-            Trainee foundTrainee = gymFacade.findTraineeById(trainees.get(0).getId());
-            if (foundTrainee != null) {
-                logger.info(LoggerConstants.DEMO_FOUND_TRAINEE_BY_ID, foundTrainee.getFirstName(), foundTrainee.getLastName());
-            }
-        }
+        Trainer updatedTrainer = gymFacade.updateTrainer(
+                trainer.getUsername(),
+                trainer.getPassword(),
+                "Dastan",
+                "Ibraimov",
+                TrainingType.YOGA
+        );
+        logger.info("Trainer profile updated. New specialization: {}", updatedTrainer.getSpecialization());
+
+        trainer.setSpecialization(updatedTrainer.getSpecialization());
     }
 
-    private static void demoTrainerOperations(GymFacade gymFacade) {
-        logger.info(LoggerConstants.DEMO_TRAINER_STARTED);
+    private static void demoPasswordChange(GymFacade gymFacade, Trainee trainee, Trainer trainer) {
+        String oldTraineePassword = trainee.getPassword();
+        String newTraineePassword = "newPassword123";
 
-        Trainer savedTrainer = gymFacade.createTrainer(
-                DemoConstants.TRAINER_FIRST_NAME, 
-                DemoConstants.TRAINER_LAST_NAME, 
-                TrainingType.STRETCHING
+        Trainee traineeWithNewPassword = gymFacade.changeTraineePassword(
+                trainee.getUsername(),
+                oldTraineePassword,
+                newTraineePassword
         );
-        logger.info(LoggerConstants.TRAINER_CREATED_DETAILS,
-                savedTrainer.getFirstName() + " " + savedTrainer.getLastName(),
-                savedTrainer.getUsername(),
-                savedTrainer.getPassword(),
-                savedTrainer.getSpecialization());
+        trainee.setPassword(newTraineePassword);
+        logger.info("Trainee password changed successfully. Username: {}", traineeWithNewPassword.getUsername());
 
-        List<Trainer> trainers = gymFacade.findAllTrainers();
-        logger.info(LoggerConstants.TRAINERS_FOUND, trainers.size());
-        
-        if (!trainers.isEmpty()) {
-            Trainer trainerToUpdate = trainers.get(0);
-            Trainer updatedTrainer = gymFacade.updateTrainer(
-                    trainerToUpdate.getId(),
-                    trainerToUpdate.getFirstName(),
-                    trainerToUpdate.getLastName(),
-                    TrainingType.FITNESS,
-                    true
-            );
-            logger.info(LoggerConstants.DEMO_UPDATED_TRAINER_SPECIALIZATION, updatedTrainer.getSpecialization());
-        }
-        
-        if (!trainers.isEmpty()) {
-            Trainer foundTrainer = gymFacade.findTrainerById(trainers.get(0).getId());
-            if (foundTrainer != null) {
-                logger.info(LoggerConstants.DEMO_FOUND_TRAINER_BY_ID, 
-                        foundTrainer.getFirstName(), 
-                        foundTrainer.getLastName(),
-                        foundTrainer.getSpecialization());
-            }
-        }
+        String oldTrainerPassword = trainer.getPassword();
+        String newTrainerPassword = "trainerNewPass456";
+
+        Trainer trainerWithNewPassword = gymFacade.changeTrainerPassword(
+                trainer.getUsername(),
+                oldTrainerPassword,
+                newTrainerPassword
+        );
+        trainer.setPassword(newTrainerPassword);
+        logger.info("Trainer password changed successfully. Username: {}", trainerWithNewPassword.getUsername());
     }
 
-    private static void demoTrainingOperations(GymFacade gymFacade) {
-        logger.info(LoggerConstants.DEMO_TRAINING_STARTED);
+    private static void demoAddTraining(GymFacade gymFacade, Trainee trainee, Trainer trainer) {
+        Training training = Training.builder()
+                .trainee(trainee)
+                .trainer(trainer)
+                .trainingName("Morning Yoga Session")
+                .trainingType(trainer.getSpecialization())
+                .trainingDate(LocalDate.now().plusDays(7))
+                .trainingDuration(60)
+                .build();
 
-        List<Trainee> trainees = gymFacade.findAllTrainees();
-        List<Trainer> trainers = gymFacade.findAllTrainers();
-
-        if (!trainees.isEmpty() && !trainers.isEmpty()) {
-            Trainee trainee = trainees.get(0);
-            Trainer trainer = trainers.stream()
-                    .filter(t -> t.getSpecialization().equals(TrainingType.STRETCHING))
-                    .findFirst()
-                    .orElse(trainers.get(0));
-
-            Training savedTraining = gymFacade.createTraining(
-                    trainee.getId(),
-                    trainer.getId(),
-                    DemoConstants.TRAINING_NAME,
-                    trainer.getSpecialization(),
-                    LocalDate.now().plusDays(DemoConstants.TRAINING_DAYS_FROM_NOW),
-                    DemoConstants.TRAINING_DURATION
-            );
-            logger.info(LoggerConstants.TRAINING_CREATED_DETAILS,
-                    savedTraining.getTrainingName(),
-                    savedTraining.getTrainingDuration(),
-                    savedTraining.getTrainingDate());
-
-            List<Training> trainings = gymFacade.findAllTrainings();
-            logger.info(LoggerConstants.TRAININGS_FOUND, trainings.size());
-            
-            if (!trainings.isEmpty()) {
-                Training foundTraining = gymFacade.findTrainingById(trainings.get(0).getId());
-                if (foundTraining != null) {
-                    logger.info(LoggerConstants.DEMO_FOUND_TRAINING_BY_ID, 
-                            foundTraining.getTrainingName(),
-                            foundTraining.getTrainingDuration(),
-                            foundTraining.getTrainingDate());
-                }
-            }
-        }
+        Training savedTraining = gymFacade.addTraining(training);
+        logger.info("Training added: {} (duration: {} min, date: {})",
+                savedTraining.getTrainingName(),
+                savedTraining.getTrainingDuration(),
+                savedTraining.getTrainingDate());
     }
-    
-    private static void demoDeleteOperations(GymFacade gymFacade) {
-        logger.info(LoggerConstants.DEMO_DELETE_STARTED);
-        
-        Trainee traineeToDelete = gymFacade.createTrainee(
-                DemoConstants.DEMO_DELETE_TRAINEE_FIRST_NAME,
-                DemoConstants.DEMO_DELETE_TRAINEE_LAST_NAME,
-                LocalDate.of(DemoConstants.DEMO_DELETE_TRAINEE_BIRTH_YEAR, 
-                           DemoConstants.DEMO_DELETE_TRAINEE_BIRTH_MONTH, 
-                           DemoConstants.DEMO_DELETE_TRAINEE_BIRTH_DAY),
-                DemoConstants.DEMO_DELETE_TRAINEE_ADDRESS
+
+    private static void demoGetTrainings(GymFacade gymFacade, Trainee trainee, Trainer trainer) {
+        List<Training> traineeTrainings = gymFacade.getTraineeTrainings(
+                trainee.getUsername(),
+                trainee.getPassword(),
+                null,
+                null,
+                trainer.getFirstName() + " " + trainer.getLastName(),
+                null
         );
-        logger.info(LoggerConstants.DEMO_TRAINEE_CREATED_FOR_DELETION, 
-                traineeToDelete.getFirstName(), 
-                traineeToDelete.getLastName());
-        
-        boolean deleted = gymFacade.deleteTrainee(traineeToDelete.getId());
-        if (deleted) {
-            logger.info(LoggerConstants.DEMO_TRAINEE_DELETED_SUCCESS, traineeToDelete.getId());
-        } else {
-            logger.warn(LoggerConstants.DEMO_TRAINEE_DELETE_FAILED, traineeToDelete.getId());
+        logger.info("Found {} trainings for trainee {}", traineeTrainings.size(), trainee.getUsername());
+
+        List<Training> trainerTrainings = gymFacade.getTrainerTrainings(
+                trainer.getUsername(),
+                trainer.getPassword(),
+                LocalDate.now(),
+                LocalDate.now().plusMonths(1),
+                trainee.getFirstName()
+        );
+        logger.info("Found {} trainings for trainer {}", trainerTrainings.size(), trainer.getUsername());
+    }
+
+    private static void demoGetUnassignedTrainers(GymFacade gymFacade, Trainee trainee) {
+        List<Trainer> unassignedTrainers = gymFacade.getUnassignedTrainers(
+                trainee.getUsername(),
+                trainee.getPassword()
+        );
+        logger.info("Found {} unassigned trainers for trainee {}",
+                unassignedTrainers.size(), trainee.getUsername());
+    }
+
+    private static void demoUpdateTrainersList(GymFacade gymFacade, Trainee trainee, Trainer trainer) {
+        Set<Trainer> trainers = new HashSet<>();
+        trainers.add(trainer);
+
+        Trainee updatedTrainee = gymFacade.updateTraineeTrainersList(
+                trainee.getUsername(),
+                trainee.getPassword(),
+                trainers
+        );
+        logger.info("Updated trainers list for trainee {}. Assigned trainers: {}",
+                updatedTrainee.getUsername(), trainers.size());
+    }
+
+    private static void demoActivateDeactivate(GymFacade gymFacade, Trainee trainee, Trainer trainer) {
+        Trainee deactivatedTrainee = gymFacade.deactivateTrainee(
+                trainee.getUsername(),
+                trainee.getPassword()
+        );
+        logger.info("Trainee {} deactivated. isActive: {}",
+                trainee.getUsername(), deactivatedTrainee.isActive());
+
+        Trainee activatedTrainee = gymFacade.activateTrainee(
+                trainee.getUsername(),
+                trainee.getPassword()
+        );
+        logger.info("Trainee {} activated. isActive: {}",
+                trainee.getUsername(), activatedTrainee.isActive());
+
+        try {
+            gymFacade.activateTrainee(trainee.getUsername(), trainee.getPassword());
+            logger.warn("Activate/Deactivate is IDEMPOTENT (should not be!)");
+        } catch (Exception e) {
+            logger.info("Second activation correctly rejected (NOT idempotent): {}", e.getMessage());
         }
         
-        Trainee foundTrainee = gymFacade.findTraineeById(traineeToDelete.getId());
-        if (foundTrainee == null) {
-            logger.info(LoggerConstants.DEMO_TRAINEE_CONFIRMED_DELETED, traineeToDelete.getId());
-        } else {
-            logger.warn(LoggerConstants.DEMO_TRAINEE_STILL_EXISTS, traineeToDelete.getId());
+        Trainer deactivatedTrainer = gymFacade.deactivateTrainer(
+                trainer.getUsername(),
+                trainer.getPassword()
+        );
+        logger.info("Trainer {} deactivated. isActive: {}",
+                trainer.getUsername(), deactivatedTrainer.isActive());
+
+        Trainer activatedTrainer = gymFacade.activateTrainer(
+                trainer.getUsername(),
+                trainer.getPassword()
+        );
+        logger.info("Trainer {} activated. isActive: {}",
+                trainer.getUsername(), activatedTrainer.isActive());
+    }
+
+    private static void demoDeleteTrainee(GymFacade gymFacade, Trainee trainee) {
+        logger.info("Deleting trainee: {}", trainee.getUsername());
+        gymFacade.deleteTrainee(trainee.getUsername(), trainee.getPassword());
+        logger.info("Trainee {} deleted with cascade deletion of related trainings", trainee.getUsername());
+
+        try {
+            Trainee deletedTrainee = gymFacade.findTraineeByUsername(trainee.getUsername(), trainee.getPassword());
+            logger.warn("Trainee still exists after deletion: {}", deletedTrainee.getUsername());
+        } catch (Exception e) {
+            logger.info("Confirmed: Trainee {} no longer exists", trainee.getUsername());
         }
-        
-        List<Trainee> finalTrainees = gymFacade.findAllTrainees();
-        List<Trainer> finalTrainers = gymFacade.findAllTrainers();
-        List<Training> finalTrainings = gymFacade.findAllTrainings();
-        
-        logger.info(LoggerConstants.DEMO_FINAL_STATISTICS, 
-                finalTrainees.size(), finalTrainers.size(), finalTrainings.size());
     }
 }

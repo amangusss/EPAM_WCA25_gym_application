@@ -1,2 +1,0 @@
-John,Doe,John.Doe,password123,true,1990-05-15,123 Main St
-Jane,Smith,Jane.Smith,pass456,true,1985-08-22,456 Oak Ave

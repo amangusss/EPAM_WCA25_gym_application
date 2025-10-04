@@ -1,14 +1,12 @@
 package com.github.amangusss.gym_application.service;
 
+import com.github.amangusss.gym_application.entity.TrainingType;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.training.Training;
-import com.github.amangusss.gym_application.entity.TrainingType;
-import com.github.amangusss.gym_application.repository.TraineeDAO;
-import com.github.amangusss.gym_application.repository.TrainerDAO;
-import com.github.amangusss.gym_application.repository.TrainingDAO;
+import com.github.amangusss.gym_application.repository.TrainingRepository;
 import com.github.amangusss.gym_application.service.impl.TrainingServiceImpl;
-
+import com.github.amangusss.gym_application.util.validation.service.training.TrainingServiceValidation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,28 +15,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.github.amangusss.gym_application.exception.ValidationException;
-import com.github.amangusss.gym_application.exception.TraineeNotFoundException;
-import com.github.amangusss.gym_application.exception.TrainerNotFoundException;
-
 @ExtendWith(MockitoExtension.class)
 class TrainingServiceTest {
 
     @Mock
-    private TrainingDAO trainingDAO;
+    private TrainingRepository trainingRepository;
 
     @Mock
-    private TrainerDAO trainerDAO;
-
-    @Mock
-    private TraineeDAO traineeDAO;
+    private TrainingServiceValidation trainingServiceValidation;
 
     @InjectMocks
     private TrainingServiceImpl trainingService;
@@ -49,93 +38,151 @@ class TrainingServiceTest {
 
     @BeforeEach
     void setUp() {
-        testTrainee = new Trainee("John", "Doe");
-        testTrainee.setId(1L);
-        testTrainee.setActive(true);
+        testTrainee = Trainee.builder()
+                .id(1L)
+                .firstName("Aman")
+                .lastName("Nazarkulov")
+                .username("Aman.Nazarkulov")
+                .password("password123")
+                .isActive(true)
+                .dateOfBirth(LocalDate.of(2004, 2, 14))
+                .address("Isakeev st, 18/10 Block 15")
+                .build();
 
-        testTrainer = new Trainer("Jane", "Smith", TrainingType.FITNESS);
-        testTrainer.setId(2L);
-        testTrainer.setActive(true);
+        testTrainer = Trainer.builder()
+                .id(2L)
+                .firstName("Dastan")
+                .lastName("Ibraimov")
+                .username("Dastan.Ibraimov")
+                .password("password123")
+                .isActive(true)
+                .specialization(TrainingType.YOGA)
+                .build();
 
-        testTraining = new Training(1L, 2L, "Morning Workout", TrainingType.FITNESS, 
-                LocalDate.now().plusDays(1), 60);
+        testTraining = Training.builder()
+                .trainee(testTrainee)
+                .trainer(testTrainer)
+                .trainingName("Morning Yoga Session")
+                .trainingType(TrainingType.YOGA)
+                .trainingDate(LocalDate.now().plusDays(1))
+                .trainingDuration(60)
+                .build();
     }
 
     @Test
-    void createTraining_ShouldCreateAndReturnTraining() {
-        when(traineeDAO.findById(1L)).thenReturn(testTrainee);
-        when(trainerDAO.findById(2L)).thenReturn(testTrainer);
-        when(trainingDAO.save(any(Training.class))).thenReturn(testTraining);
+    void addTraining_ShouldValidateAndSaveTraining() {
+        doNothing().when(trainingServiceValidation).validateTrainingForAddition(any());
+        when(trainingRepository.save(any(Training.class))).thenReturn(testTraining);
 
-        Training result = trainingService.createTraining(testTraining);
+        Training result = trainingService.addTraining(testTraining);
 
         assertNotNull(result);
-        assertEquals(testTraining, result);
-        verify(traineeDAO).findById(1L);
-        verify(trainerDAO).findById(2L);
-        verify(trainingDAO).save(testTraining);
+        assertEquals("Morning Yoga Session", result.getTrainingName());
+        assertEquals(60, result.getTrainingDuration());
+        assertEquals(TrainingType.YOGA, result.getTrainingType());
+
+        verify(trainingServiceValidation).validateTrainingForAddition(testTraining);
+        verify(trainingRepository).save(testTraining);
     }
 
     @Test
-    void createTraining_WithNullTraining_ShouldThrowException() {
-        assertThrows(ValidationException.class, () -> trainingService.createTraining(null));
+    void addTraining_WithNullTraining_ShouldValidateAndThrowException() {
+        doThrow(new IllegalArgumentException("Training cannot be null"))
+                .when(trainingServiceValidation).validateTrainingForAddition(null);
+
+        assertThrows(IllegalArgumentException.class, () -> trainingService.addTraining(null));
+
+        verify(trainingServiceValidation).validateTrainingForAddition(null);
+        verify(trainingRepository, never()).save(any());
     }
 
     @Test
-    void createTraining_WithNonExistentTrainee_ShouldThrowException() {
-        when(traineeDAO.findById(1L)).thenReturn(null);
+    void addTraining_WithInvalidTrainingData_ShouldThrowException() {
+        testTraining.setTrainingName(null);
 
-        assertThrows(TraineeNotFoundException.class, () -> trainingService.createTraining(testTraining));
+        doThrow(new IllegalArgumentException("Training name cannot be null"))
+                .when(trainingServiceValidation).validateTrainingForAddition(testTraining);
+
+        assertThrows(IllegalArgumentException.class, () -> trainingService.addTraining(testTraining));
+
+        verify(trainingServiceValidation).validateTrainingForAddition(testTraining);
+        verify(trainingRepository, never()).save(any());
     }
 
     @Test
-    void createTraining_WithNonExistentTrainer_ShouldThrowException() {
-        when(traineeDAO.findById(1L)).thenReturn(testTrainee);
-        when(trainerDAO.findById(2L)).thenReturn(null);
+    void addTraining_WithNullTrainee_ShouldThrowException() {
+        testTraining.setTrainee(null);
 
-        assertThrows(TrainerNotFoundException.class, () -> trainingService.createTraining(testTraining));
+        doThrow(new IllegalArgumentException("Trainee cannot be null"))
+                .when(trainingServiceValidation).validateTrainingForAddition(testTraining);
+
+        assertThrows(IllegalArgumentException.class, () -> trainingService.addTraining(testTraining));
+
+        verify(trainingRepository, never()).save(any());
     }
 
     @Test
-    void createTraining_WithInactiveTrainee_ShouldThrowException() {
-        testTrainee.setActive(false);
-        when(traineeDAO.findById(1L)).thenReturn(testTrainee);
-        when(trainerDAO.findById(2L)).thenReturn(testTrainer);
+    void addTraining_WithNullTrainer_ShouldThrowException() {
+        testTraining.setTrainer(null);
 
-        assertThrows(ValidationException.class, () -> trainingService.createTraining(testTraining));
+        doThrow(new IllegalArgumentException("Trainer cannot be null"))
+                .when(trainingServiceValidation).validateTrainingForAddition(testTraining);
+
+        assertThrows(IllegalArgumentException.class, () -> trainingService.addTraining(testTraining));
+
+        verify(trainingRepository, never()).save(any());
     }
 
     @Test
-    void createTraining_WithInactiveTrainer_ShouldThrowException() {
-        testTrainer.setActive(false);
-        when(traineeDAO.findById(1L)).thenReturn(testTrainee);
-        when(trainerDAO.findById(2L)).thenReturn(testTrainer);
+    void addTraining_WithPastDate_ShouldStillSave() {
+        testTraining.setTrainingDate(LocalDate.now().minusDays(1));
 
-        assertThrows(ValidationException.class, () -> trainingService.createTraining(testTraining));
-    }
+        doNothing().when(trainingServiceValidation).validateTrainingForAddition(any());
+        when(trainingRepository.save(any(Training.class))).thenReturn(testTraining);
 
-    @Test
-    void findTraining_ShouldReturnTraining() {
-        Long trainingId = 1L;
-        when(trainingDAO.findById(trainingId)).thenReturn(testTraining);
-
-        Training result = trainingService.findTraining(trainingId);
+        Training result = trainingService.addTraining(testTraining);
 
         assertNotNull(result);
-        assertEquals(testTraining, result);
-        verify(trainingDAO).findById(trainingId);
+        verify(trainingRepository).save(testTraining);
     }
 
     @Test
-    void findAllTrainings_ShouldReturnAllTrainings() {
-        List<Training> trainings = Collections.singletonList(testTraining);
-        when(trainingDAO.findAll()).thenReturn(trainings);
+    void addTraining_WithZeroDuration_ShouldStillSave() {
+        testTraining.setTrainingDuration(0);
 
-        List<Training> result = trainingService.findAllTrainings();
+        doNothing().when(trainingServiceValidation).validateTrainingForAddition(any());
+        when(trainingRepository.save(any(Training.class))).thenReturn(testTraining);
+
+        Training result = trainingService.addTraining(testTraining);
 
         assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(testTraining, result.get(0));
-        verify(trainingDAO).findAll();
+        assertEquals(0, result.getTrainingDuration());
+        verify(trainingRepository).save(testTraining);
+    }
+
+    @Test
+    void addTraining_MultipleTrainings_ShouldSaveAllIndependently() {
+        Training training1 = testTraining;
+        Training training2 = Training.builder()
+                .trainee(testTrainee)
+                .trainer(testTrainer)
+                .trainingName("Evening Yoga Session")
+                .trainingType(TrainingType.YOGA)
+                .trainingDate(LocalDate.now().plusDays(2))
+                .trainingDuration(90)
+                .build();
+
+        doNothing().when(trainingServiceValidation).validateTrainingForAddition(any());
+        when(trainingRepository.save(training1)).thenReturn(training1);
+        when(trainingRepository.save(training2)).thenReturn(training2);
+
+        Training result1 = trainingService.addTraining(training1);
+        Training result2 = trainingService.addTraining(training2);
+
+        assertNotNull(result1);
+        assertNotNull(result2);
+        assertNotEquals(result1.getTrainingName(), result2.getTrainingName());
+
+        verify(trainingRepository, times(2)).save(any(Training.class));
     }
 }
