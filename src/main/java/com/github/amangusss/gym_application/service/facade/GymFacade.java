@@ -1,149 +1,169 @@
 package com.github.amangusss.gym_application.service.facade;
 
-import com.github.amangusss.gym_application.entity.trainee.Trainee;
-import com.github.amangusss.gym_application.entity.trainee.TraineeBuilder;
-import com.github.amangusss.gym_application.entity.trainer.Trainer;
-import com.github.amangusss.gym_application.entity.trainer.TrainerBuilder;
-import com.github.amangusss.gym_application.entity.training.Training;
 import com.github.amangusss.gym_application.entity.TrainingType;
-import com.github.amangusss.gym_application.entity.training.TrainingBuilder;
-import com.github.amangusss.gym_application.exception.TraineeNotFoundException;
-import com.github.amangusss.gym_application.exception.TrainerNotFoundException;
-import com.github.amangusss.gym_application.exception.TrainingNotFoundException;
+import com.github.amangusss.gym_application.entity.trainee.Trainee;
+import com.github.amangusss.gym_application.entity.trainer.Trainer;
+import com.github.amangusss.gym_application.entity.training.Training;
 import com.github.amangusss.gym_application.service.TraineeService;
 import com.github.amangusss.gym_application.service.TrainerService;
 import com.github.amangusss.gym_application.service.TrainingService;
-import com.github.amangusss.gym_application.util.constants.ConfigConstants;
-import com.github.amangusss.gym_application.util.constants.LoggerConstants;
-import com.github.amangusss.gym_application.util.constants.ValidationConstants;
-
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
-@Component(ConfigConstants.BEAN_GYM_FACADE)
+@Component
+@RequiredArgsConstructor
 public class GymFacade {
 
-    public static final Logger logger = LoggerFactory.getLogger(GymFacade.class);
+    private static final Logger logger = LoggerFactory.getLogger(GymFacade.class);
 
     private final TraineeService traineeService;
     private final TrainerService trainerService;
     private final TrainingService trainingService;
 
-    public GymFacade(TraineeService traineeService,
-                     TrainerService trainerService,
-                     TrainingService trainingService) {
-        this.traineeService = traineeService;
-        this.trainerService = trainerService;
-        this.trainingService = trainingService;
-        logger.info(LoggerConstants.FACADE_INITIALIZED);
-    }
+    // Trainee
 
-    //Trainee
     public Trainee createTrainee(String firstName, String lastName, LocalDate dateOfBirth, String address) {
-        logger.debug(LoggerConstants.DEBUG_CREATING_TRAINEE, 
-                firstName, lastName, dateOfBirth, address);
-        
-        Trainee trainee = TraineeBuilder.builder()
+        logger.info("Creating trainee: {} {}", firstName, lastName);
+
+        Trainee trainee = Trainee.builder()
                 .firstName(firstName)
                 .lastName(lastName)
                 .dateOfBirth(dateOfBirth)
                 .address(address)
                 .build();
         
-        logger.debug(LoggerConstants.DEBUG_BUILT_TRAINEE, trainee);
-        
-        Trainee savedTrainee = traineeService.createTrainee(trainee);
-        logger.debug(LoggerConstants.DEBUG_TRAINEE_CREATED, savedTrainee.getId());
-        
-        return savedTrainee;
+        Trainee createdTrainee = traineeService.createTrainee(trainee);
+        logger.info("Trainee created with username: {} and password: {}",
+                createdTrainee.getUsername(), createdTrainee.getPassword());
+
+        return createdTrainee;
     }
 
-    public Trainee updateTrainee(Long id, String firstName, String lastName, LocalDate dateOfBirth, String address, Boolean isActive) {
-        Trainee trainee = traineeService.findTraineeById(id);
-        if (trainee == null) {
-            throw new TraineeNotFoundException(String.format(ValidationConstants.TRAINEE_NOT_FOUND_BY_ID, id));
-        }
-
-        trainee.setFirstName(firstName);
-        trainee.setLastName(lastName);
-        trainee.setDateOfBirth(dateOfBirth);
-        trainee.setAddress(address);
-        trainee.setActive(isActive);
-
-        return traineeService.updateTrainee(trainee);
+    public Trainee findTraineeByUsername(String username, String password) {
+        logger.info("Finding trainee by username: {}", username);
+        return traineeService.findTraineeByUsername(username, password);
     }
 
-    public boolean deleteTrainee(Long traineeId) {
-        return traineeService.deleteTrainee(traineeId);
+    public Trainee updateTrainee(String username, String password, String firstName, String lastName,
+                                 LocalDate dateOfBirth, String address) {
+        logger.info("Updating trainee: {}", username);
+
+        Trainee trainee = Trainee.builder()
+                .firstName(firstName)
+                .lastName(lastName)
+                .dateOfBirth(dateOfBirth)
+                .address(address)
+                .build();
+
+        return traineeService.updateTrainee(username, password, trainee);
     }
 
-    public Trainee findTraineeById(Long traineeId) {
-        return traineeService.findTraineeById(traineeId);
+    public void deleteTrainee(String username, String password) {
+        logger.info("Deleting trainee: {}", username);
+        traineeService.deleteTraineeByUsername(username, password);
     }
 
-    public List<Trainee> findAllTrainees() {
-        return traineeService.findAllTrainees();
+    public boolean authenticateTrainee(String username, String password) {
+        logger.info("Authenticating trainee: {}", username);
+        return traineeService.authenticateTrainee(username, password);
     }
 
-    //Trainer
+    public Trainee changeTraineePassword(String username, String oldPassword, String newPassword) {
+        logger.info("Changing password for trainee: {}", username);
+        return traineeService.changeTraineePassword(username, oldPassword, newPassword);
+    }
+
+    public Trainee activateTrainee(String username, String password) {
+        logger.info("Activating trainee: {}", username);
+        return traineeService.activateTrainee(username, password);
+    }
+
+    public Trainee deactivateTrainee(String username, String password) {
+        logger.info("Deactivating trainee: {}", username);
+        return traineeService.deactivateTrainee(username, password);
+    }
+
+    public List<Training> getTraineeTrainings(String username, String password, LocalDate fromDate, LocalDate toDate,
+                                               String trainerName, TrainingType trainingType) {
+        logger.info("Getting trainings for trainee: {}", username);
+        return traineeService.getTraineeTrainingsList(username, password, fromDate, toDate, trainerName, trainingType);
+    }
+
+    public List<Trainer> getUnassignedTrainers(String traineeUsername, String traineePassword) {
+        logger.info("Getting unassigned trainers for trainee: {}", traineeUsername);
+        return traineeService.getTrainersNotAssignedToTrainee(traineeUsername, traineePassword);
+    }
+
+    public Trainee updateTraineeTrainersList(String username, String password, Set<Trainer> trainers) {
+        logger.info("Updating trainers list for trainee: {}", username);
+        return traineeService.updateTraineeTrainersList(username, password, trainers);
+    }
+
+    // Trainer
     public Trainer createTrainer(String firstName, String lastName, TrainingType specialization) {
-        Trainer trainer = TrainerBuilder.builder()
+        logger.info("Creating trainer: {} {}", firstName, lastName);
+
+        Trainer trainer = Trainer.builder()
                 .firstName(firstName)
                 .lastName(lastName)
                 .specialization(specialization)
                 .build();
-        return trainerService.createTrainer(trainer);
+
+        Trainer createdTrainer = trainerService.createTrainer(trainer);
+        logger.info("Trainer created with username: {} and password: {}",
+                createdTrainer.getUsername(), createdTrainer.getPassword());
+
+        return createdTrainer;
     }
 
-    public Trainer updateTrainer(Long id, String firstName, String lastName, TrainingType specialization, Boolean isActive) {
-        Trainer trainer = trainerService.findTrainerById(id);
-        if (trainer == null) {
-            throw new TrainerNotFoundException(String.format(ValidationConstants.TRAINER_NOT_FOUND_BY_ID, id));
-        }
+    public Trainer updateTrainer(String username, String password, String firstName, String lastName,
+                                 TrainingType specialization) {
+        logger.info("Updating trainer: {}", username);
 
-        trainer.setFirstName(firstName);
-        trainer.setLastName(lastName);
-        trainer.setSpecialization(specialization);
-        trainer.setActive(isActive);
-
-        return trainerService.updateTrainer(trainer);
-    }
-
-    public Trainer findTrainerById(Long trainerId) {
-        return trainerService.findTrainerById(trainerId);
-    }
-
-    public List<Trainer> findAllTrainers() {
-        return trainerService.findAllTrainers();
-    }
-
-    //Training
-    public Training createTraining(Long traineeId, Long trainerId, String trainingName,
-                                   TrainingType trainingType, LocalDate trainingDate, Integer trainingDuration) {
-        Training training = TrainingBuilder.builder()
-                .traineeId(traineeId)
-                .trainerId(trainerId)
-                .trainingName(trainingName)
-                .trainingType(trainingType)
-                .trainingDate(trainingDate)
-                .trainingDuration(trainingDuration)
+        Trainer trainer = Trainer.builder()
+                .firstName(firstName)
+                .lastName(lastName)
+                .specialization(specialization)
                 .build();
-        return trainingService.createTraining(training);
+
+        return trainerService.updateTrainer(username, password, trainer);
     }
 
-    public Training findTrainingById(Long trainingId) {
-        Training training = trainingService.findTraining(trainingId);
-        if (training == null) {
-            throw new TrainingNotFoundException(String.format(ValidationConstants.TRAINING_NOT_FOUND_BY_ID, trainingId));
-        }
-        return training;
+    public boolean authenticateTrainer(String username, String password) {
+        logger.info("Authenticating trainer: {}", username);
+        return trainerService.authenticateTrainer(username, password);
     }
 
-    public List<Training> findAllTrainings() {
-        return trainingService.findAllTrainings();
+    public Trainer changeTrainerPassword(String username, String oldPassword, String newPassword) {
+        logger.info("Changing password for trainer: {}", username);
+        return trainerService.changeTrainerPassword(username, oldPassword, newPassword);
+    }
+
+    public Trainer activateTrainer(String username, String password) {
+        logger.info("Activating trainer: {}", username);
+        return trainerService.activateTrainer(username, password);
+    }
+
+    public Trainer deactivateTrainer(String username, String password) {
+        logger.info("Deactivating trainer: {}", username);
+        return trainerService.deactivateTrainer(username, password);
+    }
+
+    public List<Training> getTrainerTrainings(String username, String password, LocalDate fromDate, LocalDate toDate,
+                                               String traineeName) {
+        logger.info("Getting trainings for trainer: {}", username);
+        return trainerService.getTrainerTrainingsList(username, password, fromDate, toDate, traineeName);
+    }
+
+    // Training
+    public Training addTraining(Training training) {
+        logger.info("Adding training: {}", training.getTrainingName());
+        return trainingService.addTraining(training);
     }
 }
