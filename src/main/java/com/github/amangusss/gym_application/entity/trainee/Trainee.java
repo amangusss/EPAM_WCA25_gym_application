@@ -1,67 +1,76 @@
 package com.github.amangusss.gym_application.entity.trainee;
 
 import com.github.amangusss.gym_application.entity.User;
+import com.github.amangusss.gym_application.entity.trainer.Trainer;
+import com.github.amangusss.gym_application.entity.training.Training;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.JoinColumn;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
+@Getter
+@Setter
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
+@Entity
+@Table(name = "trainees")
 public class Trainee extends User {
 
+    @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
+
+    @Column(name = "address")
     private String address;
-    private Set<Long> trainerIds;
 
-    public Trainee() {
-        super();
-        this.trainerIds = new HashSet<>();
-    }
+    @Builder.Default
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "trainee_trainer",
+            joinColumns = @JoinColumn(name = "trainee_id"),
+            inverseJoinColumns = @JoinColumn(name = "trainer_id")
+    )
+    @ToString.Exclude
+    private Set<Trainer> trainers = new HashSet<>();
 
-    public Trainee(String firstName, String lastName) {
-        super(firstName, lastName);
-        this.trainerIds = new HashSet<>();
-    }
+    @Builder.Default
+    @OneToMany(mappedBy = "trainee",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    @ToString.Exclude
+    private Set<Training> trainings = new HashSet<>();
 
-    public Trainee(String firstName, String lastName, LocalDate dateOfBirth, String address) {
-        this(firstName, lastName);
-        this.dateOfBirth = dateOfBirth;
-        this.address = address;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public LocalDate getDateOfBirth() {
-        return dateOfBirth;
-    }
-
-    public void setDateOfBirth(LocalDate dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
-
-    public Set<Long> getTrainerIds() {
-        return trainerIds;
-    }
-
-    public void setTrainerIds(Set<Long> trainerIds) {
-        this.trainerIds = trainerIds;
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Trainee trainee = (Trainee) o;
+        return getId() != null && Objects.equals(getId(), trainee.getId());
     }
 
     @Override
-    public String toString() {
-        return "Trainee{" +
-                "id=" + getId() +
-                ", firstName='" + getFirstName() + '\'' +
-                ", lastName='" + getLastName() + '\'' +
-                ", username='" + getUsername() + '\'' +
-                ", isActive=" + isActive() +
-                ", dateOfBirth=" + dateOfBirth +
-                ", address='" + address + '\'' +
-                '}';
+    public final int hashCode() {
+        return getClass().hashCode();
     }
 }
