@@ -8,9 +8,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TrainingServiceServiceValidationImpl implements TrainingServiceValidation {
+public class TrainingServiceValidationImpl implements TrainingServiceValidation {
 
-    public static final Logger logger = LoggerFactory.getLogger(TrainingServiceServiceValidationImpl.class);
+    public static final Logger logger = LoggerFactory.getLogger(TrainingServiceValidationImpl.class);
 
     @Override
     public void validateTrainingForAddition(Training training) {

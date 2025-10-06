@@ -11,9 +11,9 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 
 @Component
-public class TrainerServiceServiceValidationImpl implements TrainerServiceValidation {
+public class TrainerServiceValidationImpl implements TrainerServiceValidation {
 
-    public static final Logger logger = LoggerFactory.getLogger(TrainerServiceServiceValidationImpl.class);
+    public static final Logger logger = LoggerFactory.getLogger(TrainerServiceValidationImpl.class);
 
     @Override
     public void validateTrainerForCreationOrUpdate(Trainer trainer) {

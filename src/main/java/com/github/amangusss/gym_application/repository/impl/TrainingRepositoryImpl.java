@@ -1,6 +1,7 @@
 package com.github.amangusss.gym_application.repository.impl;
 
 import com.github.amangusss.gym_application.entity.training.Training;
+import com.github.amangusss.gym_application.exception.ValidationException;
 import com.github.amangusss.gym_application.repository.TrainingRepository;
 
 import jakarta.persistence.EntityManager;
@@ -25,7 +26,7 @@ public class TrainingRepositoryImpl implements TrainingRepository {
             training.getTrainingDate() == null ||
             training.getTrainingDuration() == null) {
 
-            throw new IllegalArgumentException("All required fields must be set for Training");
+            throw new ValidationException("All required fields must be set for Training");
         }
 
         entityManager.persist(training);

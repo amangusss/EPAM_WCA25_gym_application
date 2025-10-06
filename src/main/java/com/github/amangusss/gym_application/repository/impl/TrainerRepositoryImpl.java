@@ -131,6 +131,7 @@ public class TrainerRepositoryImpl implements TrainerRepository {
 
         Trainer trainer = findByUsername(username);
 
+        //TODO вынести
         if (trainer.isActive() == isActive) {
             String status = isActive ? "active" : "inactive";
             logger.error("Cannot change status - trainer {} is already {}", username, status);

@@ -53,7 +53,6 @@ public class GymFacade {
     public Trainee updateTrainee(String username, String password, String firstName, String lastName,
                                  LocalDate dateOfBirth, String address) {
         logger.info("Updating trainee: {}", username);
-
         Trainee trainee = Trainee.builder()
                 .firstName(firstName)
                 .lastName(lastName)
