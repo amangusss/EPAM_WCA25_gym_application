@@ -11,7 +11,7 @@ import com.github.amangusss.gym_application.service.TraineeService;
 import com.github.amangusss.gym_application.util.credentials.PasswordGenerator;
 import com.github.amangusss.gym_application.util.credentials.UsernameGenerator;
 
-import com.github.amangusss.gym_application.util.validation.service.trainee.TraineeServiceValidation;
+import com.github.amangusss.gym_application.validation.trainee.TraineeEntityValidation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -33,12 +33,12 @@ public class TraineeServiceImpl implements TraineeService {
     private final TraineeRepository traineeRepository;
     private final UsernameGenerator usernameGenerator;
     private final PasswordGenerator passwordGenerator;
-    private final TraineeServiceValidation traineeServiceValidation;
+    private final TraineeEntityValidation traineeEntityValidation;
 
     @Override
     public Trainee createTrainee(Trainee trainee) {
         logger.debug("Creating trainee profile: {} {}", trainee.getFirstName(), trainee.getLastName());
-        traineeServiceValidation.validateTraineeForCreationOrUpdate(trainee);
+        traineeEntityValidation.validateTraineeForCreationOrUpdate(trainee);
         generateCredentials(trainee);
 
         trainee.setActive(true);
@@ -63,7 +63,7 @@ public class TraineeServiceImpl implements TraineeService {
     public Trainee updateTrainee(String username, String password, Trainee trainee) {
         logger.debug("Updating trainee profile: {}", username);
         authenticationCheck(username, password);
-        traineeServiceValidation.validateTraineeForCreationOrUpdate(trainee);
+        traineeEntityValidation.validateTraineeForCreationOrUpdate(trainee);
 
         Trainee existingTrainee = traineeRepository.findByUsername(username);
 
@@ -111,7 +111,7 @@ public class TraineeServiceImpl implements TraineeService {
     public Trainee changeTraineePassword(String username, String oldPassword, String newPassword) {
         logger.debug("Changing password for trainee: {}", username);
         authenticationCheck(username, oldPassword);
-        traineeServiceValidation.validatePasswordChange(oldPassword, newPassword);
+        traineeEntityValidation.validatePasswordChange(oldPassword, newPassword);
 
         Trainee updatedTrainee = traineeRepository.updatePasswordByUsername(username, oldPassword, newPassword);
         logger.info("Successfully changed password for trainee: {}", username);
@@ -144,7 +144,7 @@ public class TraineeServiceImpl implements TraineeService {
                                                    String trainerName, TrainingType trainingType) {
         logger.debug("Getting trainings list for trainee: {} with filters", username);
         authenticationCheck(username, password);
-        traineeServiceValidation.validateDateRange(fromDate, toDate);
+        traineeEntityValidation.validateDateRange(fromDate, toDate);
 
         List<Training> trainings = traineeRepository.findTrainingsByUsername(username, fromDate, toDate, trainerName, trainingType);
         logger.info("Retrieved {} trainings for trainee: {}", trainings.size(), username);

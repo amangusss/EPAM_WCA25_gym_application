@@ -6,8 +6,8 @@ import com.github.amangusss.gym_application.repository.TrainerRepository;
 import com.github.amangusss.gym_application.service.TrainerService;
 import com.github.amangusss.gym_application.util.credentials.PasswordGenerator;
 import com.github.amangusss.gym_application.util.credentials.UsernameGenerator;
-import com.github.amangusss.gym_application.util.validation.service.trainer.TrainerServiceValidation;
 
+import com.github.amangusss.gym_application.validation.trainer.TrainerEntityValidation;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,12 +27,12 @@ public class TrainerServiceImpl implements TrainerService {
     private final TrainerRepository trainerRepository;
     private final UsernameGenerator usernameGenerator;
     private final PasswordGenerator passwordGenerator;
-    private final TrainerServiceValidation trainerServiceValidation;
+    private final TrainerEntityValidation trainerEntityValidation;
 
     @Override
     public Trainer createTrainer(Trainer trainer) {
         logger.debug("Creating trainer profile: {} {}", trainer.getFirstName(), trainer.getLastName());
-        trainerServiceValidation.validateTrainerForCreationOrUpdate(trainer);
+        trainerEntityValidation.validateTrainerForCreationOrUpdate(trainer);
         generateCredentials(trainer);
 
         trainer.setActive(true);
@@ -57,7 +57,7 @@ public class TrainerServiceImpl implements TrainerService {
     public Trainer updateTrainer(String username, String password, Trainer trainer) {
         logger.debug("Updating trainer profile: {}", username);
         authenticationCheck(username, password);
-        trainerServiceValidation.validateTrainerForCreationOrUpdate(trainer);
+        trainerEntityValidation.validateTrainerForCreationOrUpdate(trainer);
 
         Trainer existingTrainer = findTrainerByUsername(username, password);
 
@@ -90,7 +90,7 @@ public class TrainerServiceImpl implements TrainerService {
     public Trainer changeTrainerPassword(String username, String oldPassword, String newPassword) {
         logger.debug("Changing password for trainer: {}", username);
         authenticationCheck(username, oldPassword);
-        trainerServiceValidation.validatePasswordChange(oldPassword, newPassword);
+        trainerEntityValidation.validatePasswordChange(oldPassword, newPassword);
 
         Trainer updatedTrainer = trainerRepository.updatePasswordByUsername(username, oldPassword, newPassword);
         logger.info("Successfully changed password for trainer: {}", username);
@@ -122,7 +122,7 @@ public class TrainerServiceImpl implements TrainerService {
     public List<Training> getTrainerTrainingsList(String username, String password, LocalDate fromDate, LocalDate toDate, String traineeName) {
         logger.debug("Getting trainings list for trainer: {} with filters", username);
         authenticationCheck(username, password);
-        trainerServiceValidation.validateDateRange(fromDate, toDate);
+        trainerEntityValidation.validateDateRange(fromDate, toDate);
 
         List<Training> trainings = trainerRepository.findTrainingsByUsername(username, fromDate, toDate, traineeName);
         logger.info("Retrieved {} trainings for trainer: {}", trainings.size(), username);

@@ -3,8 +3,8 @@ package com.github.amangusss.gym_application.service.impl;
 import com.github.amangusss.gym_application.entity.training.Training;
 import com.github.amangusss.gym_application.repository.TrainingRepository;
 import com.github.amangusss.gym_application.service.TrainingService;
-import com.github.amangusss.gym_application.util.validation.service.training.TrainingServiceValidation;
 
+import com.github.amangusss.gym_application.validation.training.TrainingEntityValidation;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,12 +19,12 @@ public class TrainingServiceImpl implements TrainingService {
     public static final Logger logger = LoggerFactory.getLogger(TrainingServiceImpl.class);
 
     private final TrainingRepository trainingRepository;
-    private final TrainingServiceValidation trainingServiceValidation;
+    private final TrainingEntityValidation trainingEntityValidation;
 
     @Override
     public Training addTraining(Training training) {
         logger.debug("Adding training: {}", training);
-        trainingServiceValidation.validateTrainingForAddition(training);
+        trainingEntityValidation.validateTrainingForAddition(training);
 
         Training savedTraining = trainingRepository.save(training);
         logger.info("Successfully added training with id: {}", savedTraining.getId());
