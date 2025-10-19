@@ -1,4 +1,4 @@
-package com.github.amangusss.gym_application.util.validation.service;
+package com.github.amangusss.gym_application.validation;
 
 import java.time.LocalDate;
 

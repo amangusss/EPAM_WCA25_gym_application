@@ -1,16 +1,16 @@
-package com.github.amangusss.gym_application.util.validation.service.training.impl;
+package com.github.amangusss.gym_application.validation.training.impl;
 
 import com.github.amangusss.gym_application.entity.training.Training;
 import com.github.amangusss.gym_application.exception.ValidationException;
-import com.github.amangusss.gym_application.util.validation.service.training.TrainingServiceValidation;
+import com.github.amangusss.gym_application.validation.training.TrainingEntityValidation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TrainingServiceServiceValidationImpl implements TrainingServiceValidation {
+public class TrainingEntityValidationImpl implements TrainingEntityValidation {
 
-    public static final Logger logger = LoggerFactory.getLogger(TrainingServiceServiceValidationImpl.class);
+    public static final Logger logger = LoggerFactory.getLogger(TrainingEntityValidationImpl.class);
 
     @Override
     public void validateTrainingForAddition(Training training) {
