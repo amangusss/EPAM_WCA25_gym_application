@@ -3,6 +3,7 @@ package com.github.amangusss.gym_application.validation.training.impl;
 import com.github.amangusss.gym_application.entity.training.Training;
 import com.github.amangusss.gym_application.exception.ValidationException;
 import com.github.amangusss.gym_application.validation.training.TrainingEntityValidation;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
