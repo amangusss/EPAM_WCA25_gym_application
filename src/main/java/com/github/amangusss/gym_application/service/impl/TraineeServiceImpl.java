@@ -11,8 +11,8 @@ import com.github.amangusss.gym_application.repository.TrainerRepository;
 import com.github.amangusss.gym_application.service.TraineeService;
 import com.github.amangusss.gym_application.util.credentials.PasswordGenerator;
 import com.github.amangusss.gym_application.util.credentials.UsernameGenerator;
-
 import com.github.amangusss.gym_application.validation.trainee.TraineeEntityValidation;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -190,7 +190,6 @@ public class TraineeServiceImpl implements TraineeService {
         Trainee trainee = traineeRepository.findByUserUsername(username)
                 .orElseThrow(() -> new RuntimeException("Trainee not found with username: " + username));
 
-        // Получаем всех тренеров и исключаем назначенных
         List<Trainer> allTrainers = trainerRepository.findAll();
         Set<Trainer> assignedTrainers = trainee.getTrainers();
 
