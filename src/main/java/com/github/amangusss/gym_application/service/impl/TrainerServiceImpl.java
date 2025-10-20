@@ -6,9 +6,10 @@ import com.github.amangusss.gym_application.repository.TrainerRepository;
 import com.github.amangusss.gym_application.service.TrainerService;
 import com.github.amangusss.gym_application.util.credentials.PasswordGenerator;
 import com.github.amangusss.gym_application.util.credentials.UsernameGenerator;
-
 import com.github.amangusss.gym_application.validation.trainer.TrainerEntityValidation;
+
 import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -136,13 +137,13 @@ public class TrainerServiceImpl implements TrainerService {
 
         Trainer trainer = trainerRepository.findByUserUsername(username)
                 .orElseThrow(() -> new RuntimeException("Trainer not found with username: " + username));
-
+        
         List<Training> trainings = trainer.getTrainings().stream()
                 .filter(training -> {
                     if (fromDate != null && training.getTrainingDate().isBefore(fromDate)) return false;
                     if (toDate != null && training.getTrainingDate().isAfter(toDate)) return false;
                     if (traineeName != null && !traineeName.isEmpty()) {
-                        String fullName = training.getTrainee().getUser().getFirstName() + " " +
+                        String fullName = training.getTrainee().getUser().getFirstName() + " " + 
                                         training.getTrainee().getUser().getLastName();
                         if (!fullName.contains(traineeName)) return false;
                     }
