@@ -1,6 +1,7 @@
 package com.github.amangusss.gym_application.service.facade;
 
 import com.github.amangusss.gym_application.entity.TrainingType;
+import com.github.amangusss.gym_application.entity.User;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.training.Training;
@@ -27,20 +28,23 @@ public class GymFacade {
     private final TrainingService trainingService;
 
     // Trainee
-
     public Trainee createTrainee(String firstName, String lastName, LocalDate dateOfBirth, String address) {
         logger.info("Creating trainee: {} {}", firstName, lastName);
 
-        Trainee trainee = Trainee.builder()
+        User user = User.builder()
                 .firstName(firstName)
                 .lastName(lastName)
+                .build();
+
+        Trainee trainee = Trainee.builder()
+                .user(user)
                 .dateOfBirth(dateOfBirth)
                 .address(address)
                 .build();
-        
+
         Trainee createdTrainee = traineeService.createTrainee(trainee);
         logger.info("Trainee created with username: {} and password: {}",
-                createdTrainee.getUsername(), createdTrainee.getPassword());
+                createdTrainee.getUser().getUsername(), createdTrainee.getUser().getPassword());
 
         return createdTrainee;
     }
@@ -54,9 +58,13 @@ public class GymFacade {
                                  LocalDate dateOfBirth, String address) {
         logger.info("Updating trainee: {}", username);
 
-        Trainee trainee = Trainee.builder()
+        User user = User.builder()
                 .firstName(firstName)
                 .lastName(lastName)
+                .build();
+
+        Trainee trainee = Trainee.builder()
+                .user(user)
                 .dateOfBirth(dateOfBirth)
                 .address(address)
                 .build();
@@ -109,15 +117,19 @@ public class GymFacade {
     public Trainer createTrainer(String firstName, String lastName, TrainingType specialization) {
         logger.info("Creating trainer: {} {}", firstName, lastName);
 
-        Trainer trainer = Trainer.builder()
+        User user = User.builder()
                 .firstName(firstName)
                 .lastName(lastName)
+                .build();
+
+        Trainer trainer = Trainer.builder()
+                .user(user)
                 .specialization(specialization)
                 .build();
 
         Trainer createdTrainer = trainerService.createTrainer(trainer);
         logger.info("Trainer created with username: {} and password: {}",
-                createdTrainer.getUsername(), createdTrainer.getPassword());
+                createdTrainer.getUser().getUsername(), createdTrainer.getUser().getPassword());
 
         return createdTrainer;
     }
@@ -126,9 +138,13 @@ public class GymFacade {
                                  TrainingType specialization) {
         logger.info("Updating trainer: {}", username);
 
-        Trainer trainer = Trainer.builder()
+        User user = User.builder()
                 .firstName(firstName)
                 .lastName(lastName)
+                .build();
+
+        Trainer trainer = Trainer.builder()
+                .user(user)
                 .specialization(specialization)
                 .build();
 

@@ -22,12 +22,12 @@ public class TraineeEntityValidationImpl implements TraineeEntityValidation {
             throw new ValidationException("Trainee cannot be null");
         }
 
-        if (trainee.getFirstName() == null || trainee.getFirstName().trim().isEmpty()) {
+        if (trainee.getUser().getFirstName() == null || trainee.getUser().getFirstName().trim().isEmpty()) {
             logger.error("Validation failed - first name is null or empty");
             throw new ValidationException("First name is required");
         }
 
-        if (trainee.getLastName() == null || trainee.getLastName().trim().isEmpty()) {
+        if (trainee.getUser().getLastName() == null || trainee.getUser().getLastName().trim().isEmpty()) {
             logger.error("Validation failed - last name is null or empty");
             throw new ValidationException("Last name is required");
         }

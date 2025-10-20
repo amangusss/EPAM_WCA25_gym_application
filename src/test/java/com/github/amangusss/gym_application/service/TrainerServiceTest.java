@@ -1,6 +1,7 @@
 package com.github.amangusss.gym_application.service;
 
 import com.github.amangusss.gym_application.entity.TrainingType;
+import com.github.amangusss.gym_application.entity.User;
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.training.Training;
 import com.github.amangusss.gym_application.exception.AuthenticationException;
@@ -8,7 +9,7 @@ import com.github.amangusss.gym_application.repository.TrainerRepository;
 import com.github.amangusss.gym_application.service.impl.TrainerServiceImpl;
 import com.github.amangusss.gym_application.util.credentials.PasswordGenerator;
 import com.github.amangusss.gym_application.util.credentials.UsernameGenerator;
-import com.github.amangusss.gym_application.util.validation.service.trainer.TrainerServiceValidation;
+import com.github.amangusss.gym_application.validation.trainer.TrainerEntityValidation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,19 +39,29 @@ class TrainerServiceTest {
     private PasswordGenerator passwordGenerator;
 
     @Mock
-    private TrainerServiceValidation trainerServiceValidation;
+    private TrainerEntityValidation trainerEntityValidation;
 
     @InjectMocks
     private TrainerServiceImpl trainerService;
 
     private Trainer testTrainer;
+    private TrainingType testTrainingType;
 
     @BeforeEach
     void setUp() {
-        testTrainer = Trainer.builder()
+        testTrainingType = TrainingType.builder()
+                .id(1L)
+                .typeName("YOGA")
+                .build();
+
+        User user = User.builder()
                 .firstName("Aman")
                 .lastName("Nazarkulov")
-                .specialization(TrainingType.YOGA)
+                .build();
+
+        testTrainer = Trainer.builder()
+                .user(user)
+                .specialization(testTrainingType)
                 .build();
     }
 
@@ -59,15 +70,15 @@ class TrainerServiceTest {
         when(usernameGenerator.generateUsername(eq("Aman"), eq("Nazarkulov"), any(Predicate.class)))
                 .thenReturn("Aman.Nazarkulov");
         when(passwordGenerator.generatePassword()).thenReturn("password123");
-        doNothing().when(trainerServiceValidation).validateTrainerForCreationOrUpdate(any());
+        doNothing().when(trainerEntityValidation).validateTrainerForCreationOrUpdate(any());
         when(trainerRepository.save(any(Trainer.class))).thenReturn(testTrainer);
 
         Trainer result = trainerService.createTrainer(testTrainer);
 
         assertNotNull(result);
-        assertEquals("Aman.Nazarkulov", result.getUsername());
-        assertEquals("password123", result.getPassword());
-        assertTrue(result.isActive());
+        assertEquals("Aman.Nazarkulov", result.getUser().getUsername());
+        assertEquals("password123", result.getUser().getPassword());
+        assertTrue(result.getUser().isActive());
 
         verify(usernameGenerator).generateUsername(eq("Aman"), eq("Nazarkulov"), any(Predicate.class));
         verify(passwordGenerator).generatePassword();
@@ -76,8 +87,8 @@ class TrainerServiceTest {
 
     @Test
     void findTrainerByUsername_ShouldReturnTrainer() {
-        testTrainer.setUsername("Aman.Nazarkulov");
-        testTrainer.setPassword("password123");
+        testTrainer.getUser().setUsername("Aman.Nazarkulov");
+        testTrainer.getUser().setPassword("password123");
 
         when(trainerRepository.existsByUsernameAndPassword("Aman.Nazarkulov", "password123")).thenReturn(true);
         when(trainerRepository.findByUsername("Aman.Nazarkulov")).thenReturn(testTrainer);
@@ -85,7 +96,7 @@ class TrainerServiceTest {
         Trainer result = trainerService.findTrainerByUsername("Aman.Nazarkulov", "password123");
 
         assertNotNull(result);
-        assertEquals("Aman.Nazarkulov", result.getUsername());
+        assertEquals("Aman.Nazarkulov", result.getUser().getUsername());
         verify(trainerRepository).findByUsername("Aman.Nazarkulov");
     }
 
@@ -99,18 +110,27 @@ class TrainerServiceTest {
 
     @Test
     void updateTrainer_ShouldUpdateAndReturnTrainer() {
-        Trainer updatedTrainer = Trainer.builder()
-                .firstName("Aman")
-                .lastName("Nazarkulov")
-                .specialization(TrainingType.FITNESS)
+        TrainingType updatedType = TrainingType.builder()
+                .id(2L)
+                .typeName("FITNESS")
                 .build();
 
-        testTrainer.setUsername("Aman.Nazarkulov");
-        testTrainer.setPassword("password123");
+        User updatedUser = User.builder()
+                .firstName("Aman")
+                .lastName("Nazarkulov")
+                .build();
+
+        Trainer updatedTrainer = Trainer.builder()
+                .user(updatedUser)
+                .specialization(updatedType)
+                .build();
+
+        testTrainer.getUser().setUsername("Aman.Nazarkulov");
+        testTrainer.getUser().setPassword("password123");
 
         when(trainerRepository.existsByUsernameAndPassword("Aman.Nazarkulov", "password123")).thenReturn(true);
         when(trainerRepository.findByUsername("Aman.Nazarkulov")).thenReturn(testTrainer);
-        doNothing().when(trainerServiceValidation).validateTrainerForCreationOrUpdate(any());
+        doNothing().when(trainerEntityValidation).validateTrainerForCreationOrUpdate(any());
         when(trainerRepository.update(any(Trainer.class))).thenReturn(testTrainer);
 
         Trainer result = trainerService.updateTrainer("Aman.Nazarkulov", "password123", updatedTrainer);
@@ -140,10 +160,10 @@ class TrainerServiceTest {
 
     @Test
     void changeTrainerPassword_ShouldUpdatePassword() {
-        testTrainer.setUsername("Aman.Nazarkulov");
+        testTrainer.getUser().setUsername("Aman.Nazarkulov");
 
         when(trainerRepository.existsByUsernameAndPassword("Aman.Nazarkulov", "oldPassword")).thenReturn(true);
-        doNothing().when(trainerServiceValidation).validatePasswordChange("oldPassword", "newPassword");
+        doNothing().when(trainerEntityValidation).validatePasswordChange("oldPassword", "newPassword");
         when(trainerRepository.updatePasswordByUsername("Aman.Nazarkulov", "oldPassword", "newPassword"))
                 .thenReturn(testTrainer);
 
@@ -155,7 +175,7 @@ class TrainerServiceTest {
 
     @Test
     void activateTrainer_ShouldActivateTrainer() {
-        testTrainer.setActive(true);
+        testTrainer.getUser().setActive(true);
 
         when(trainerRepository.existsByUsernameAndPassword("Aman.Nazarkulov", "password123")).thenReturn(true);
         when(trainerRepository.updateActiveStatusByUsername("Aman.Nazarkulov", true)).thenReturn(testTrainer);
@@ -163,13 +183,13 @@ class TrainerServiceTest {
         Trainer result = trainerService.activateTrainer("Aman.Nazarkulov", "password123");
 
         assertNotNull(result);
-        assertTrue(result.isActive());
+        assertTrue(result.getUser().isActive());
         verify(trainerRepository).updateActiveStatusByUsername("Aman.Nazarkulov", true);
     }
 
     @Test
     void deactivateTrainer_ShouldDeactivateTrainer() {
-        testTrainer.setActive(false);
+        testTrainer.getUser().setActive(false);
 
         when(trainerRepository.existsByUsernameAndPassword("Aman.Nazarkulov", "password123")).thenReturn(true);
         when(trainerRepository.updateActiveStatusByUsername("Aman.Nazarkulov", false)).thenReturn(testTrainer);
@@ -177,7 +197,7 @@ class TrainerServiceTest {
         Trainer result = trainerService.deactivateTrainer("Aman.Nazarkulov", "password123");
 
         assertNotNull(result);
-        assertFalse(result.isActive());
+        assertFalse(result.getUser().isActive());
         verify(trainerRepository).updateActiveStatusByUsername("Aman.Nazarkulov", false);
     }
 
@@ -188,7 +208,7 @@ class TrainerServiceTest {
         List<Training> trainings = Collections.emptyList();
 
         when(trainerRepository.existsByUsernameAndPassword("Aman.Nazarkulov", "password123")).thenReturn(true);
-        doNothing().when(trainerServiceValidation).validateDateRange(fromDate, toDate);
+        doNothing().when(trainerEntityValidation).validateDateRange(fromDate, toDate);
         when(trainerRepository.findTrainingsByUsername("Aman.Nazarkulov", fromDate, toDate, "John"))
                 .thenReturn(trainings);
 
@@ -204,7 +224,7 @@ class TrainerServiceTest {
         List<Training> trainings = Collections.emptyList();
 
         when(trainerRepository.existsByUsernameAndPassword("Aman.Nazarkulov", "password123")).thenReturn(true);
-        doNothing().when(trainerServiceValidation).validateDateRange(null, null);
+        doNothing().when(trainerEntityValidation).validateDateRange(null, null);
         when(trainerRepository.findTrainingsByUsername("Aman.Nazarkulov", null, null, null))
                 .thenReturn(trainings);
 

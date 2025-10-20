@@ -1,6 +1,7 @@
 package com.github.amangusss.gym_application.service;
 
 import com.github.amangusss.gym_application.entity.TrainingType;
+import com.github.amangusss.gym_application.entity.User;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.training.Training;
@@ -10,7 +11,7 @@ import com.github.amangusss.gym_application.repository.TraineeRepository;
 import com.github.amangusss.gym_application.service.impl.TraineeServiceImpl;
 import com.github.amangusss.gym_application.util.credentials.PasswordGenerator;
 import com.github.amangusss.gym_application.util.credentials.UsernameGenerator;
-import com.github.amangusss.gym_application.util.validation.service.trainee.TraineeServiceValidation;
+import com.github.amangusss.gym_application.validation.trainee.TraineeEntityValidation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,18 +43,28 @@ class TraineeServiceTest {
     private PasswordGenerator passwordGenerator;
 
     @Mock
-    private TraineeServiceValidation traineeServiceValidation;
+    private TraineeEntityValidation traineeEntityValidation;
 
     @InjectMocks
     private TraineeServiceImpl traineeService;
 
     private Trainee testTrainee;
+    private TrainingType testTrainingType;
 
     @BeforeEach
     void setUp() {
-        testTrainee = Trainee.builder()
+        testTrainingType = TrainingType.builder()
+                .id(1L)
+                .typeName("YOGA")
+                .build();
+
+        User user = User.builder()
                 .firstName("Dastan")
                 .lastName("Ibraimov")
+                .build();
+
+        testTrainee = Trainee.builder()
+                .user(user)
                 .dateOfBirth(LocalDate.of(2004, 8, 14))
                 .address("Panfilov St, 46A")
                 .build();
@@ -64,15 +75,15 @@ class TraineeServiceTest {
         when(usernameGenerator.generateUsername(eq("Dastan"), eq("Ibraimov"), any(Predicate.class)))
                 .thenReturn("Dastan.Ibraimov");
         when(passwordGenerator.generatePassword()).thenReturn("password123");
-        doNothing().when(traineeServiceValidation).validateTraineeForCreationOrUpdate(any());
+        doNothing().when(traineeEntityValidation).validateTraineeForCreationOrUpdate(any());
         when(traineeRepository.save(any(Trainee.class))).thenReturn(testTrainee);
 
         Trainee result = traineeService.createTrainee(testTrainee);
 
         assertNotNull(result);
-        assertEquals("Dastan.Ibraimov", result.getUsername());
-        assertEquals("password123", result.getPassword());
-        assertTrue(result.isActive());
+        assertEquals("Dastan.Ibraimov", result.getUser().getUsername());
+        assertEquals("password123", result.getUser().getPassword());
+        assertTrue(result.getUser().isActive());
 
         verify(usernameGenerator).generateUsername(eq("Dastan"), eq("Ibraimov"), any(Predicate.class));
         verify(passwordGenerator).generatePassword();
@@ -81,8 +92,8 @@ class TraineeServiceTest {
 
     @Test
     void findTraineeByUsername_ShouldReturnTrainee() {
-        testTrainee.setUsername("Dastan.Ibraimov");
-        testTrainee.setPassword("password123");
+        testTrainee.getUser().setUsername("Dastan.Ibraimov");
+        testTrainee.getUser().setPassword("password123");
 
         when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
         when(traineeRepository.findByUsername("Dastan.Ibraimov")).thenReturn(testTrainee);
@@ -90,7 +101,7 @@ class TraineeServiceTest {
         Trainee result = traineeService.findTraineeByUsername("Dastan.Ibraimov", "password123");
 
         assertNotNull(result);
-        assertEquals("Dastan.Ibraimov", result.getUsername());
+        assertEquals("Dastan.Ibraimov", result.getUser().getUsername());
         verify(traineeRepository).findByUsername("Dastan.Ibraimov");
     }
 
@@ -104,19 +115,23 @@ class TraineeServiceTest {
 
     @Test
     void updateTrainee_ShouldUpdateAndReturnTrainee() {
-        Trainee updatedTrainee = Trainee.builder()
+        User updatedUser = User.builder()
                 .firstName("Dastan")
                 .lastName("Ibraimov")
+                .build();
+
+        Trainee updatedTrainee = Trainee.builder()
+                .user(updatedUser)
                 .dateOfBirth(LocalDate.of(2004, 8, 14))
                 .address("Erkindik boulevard, 10")
                 .build();
 
-        testTrainee.setUsername("Dastan.Ibraimov");
-        testTrainee.setPassword("password123");
+        testTrainee.getUser().setUsername("Dastan.Ibraimov");
+        testTrainee.getUser().setPassword("password123");
 
         when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
         when(traineeRepository.findByUsername("Dastan.Ibraimov")).thenReturn(testTrainee);
-        doNothing().when(traineeServiceValidation).validateTraineeForCreationOrUpdate(any());
+        doNothing().when(traineeEntityValidation).validateTraineeForCreationOrUpdate(any());
         when(traineeRepository.update(any(Trainee.class))).thenReturn(testTrainee);
 
         Trainee result = traineeService.updateTrainee("Dastan.Ibraimov", "password123", updatedTrainee);
@@ -171,10 +186,10 @@ class TraineeServiceTest {
 
     @Test
     void changeTraineePassword_ShouldUpdatePassword() {
-        testTrainee.setUsername("Dastan.Ibraimov");
+        testTrainee.getUser().setUsername("Dastan.Ibraimov");
 
         when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "oldPassword")).thenReturn(true);
-        doNothing().when(traineeServiceValidation).validatePasswordChange("oldPassword", "newPassword");
+        doNothing().when(traineeEntityValidation).validatePasswordChange("oldPassword", "newPassword");
         when(traineeRepository.updatePasswordByUsername("Dastan.Ibraimov", "oldPassword", "newPassword"))
                 .thenReturn(testTrainee);
 
@@ -186,7 +201,7 @@ class TraineeServiceTest {
 
     @Test
     void activateTrainee_ShouldActivateTrainee() {
-        testTrainee.setActive(true);
+        testTrainee.getUser().setActive(true);
 
         when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
         when(traineeRepository.updateActiveStatusByUsername("Dastan.Ibraimov", true)).thenReturn(testTrainee);
@@ -199,7 +214,7 @@ class TraineeServiceTest {
 
     @Test
     void deactivateTrainee_ShouldDeactivateTrainee() {
-        testTrainee.setActive(false);
+        testTrainee.getUser().setActive(false);
 
         when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
         when(traineeRepository.updateActiveStatusByUsername("Dastan.Ibraimov", false)).thenReturn(testTrainee);
@@ -207,7 +222,7 @@ class TraineeServiceTest {
         Trainee result = traineeService.deactivateTrainee("Dastan.Ibraimov", "password123");
 
         assertNotNull(result);
-        assertFalse(result.isActive());
+        assertFalse(result.getUser().isActive());
         verify(traineeRepository).updateActiveStatusByUsername("Dastan.Ibraimov", false);
     }
 
@@ -218,15 +233,15 @@ class TraineeServiceTest {
         List<Training> trainings = Collections.emptyList();
 
         when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
-        doNothing().when(traineeServiceValidation).validateDateRange(fromDate, toDate);
-        when(traineeRepository.findTrainingsByUsername("Dastan.Ibraimov", fromDate, toDate, "Jane", TrainingType.YOGA))
+        doNothing().when(traineeEntityValidation).validateDateRange(fromDate, toDate);
+        when(traineeRepository.findTrainingsByUsername("Dastan.Ibraimov", fromDate, toDate, "Jane", testTrainingType))
                 .thenReturn(trainings);
 
         List<Training> result = traineeService.getTraineeTrainingsList(
-                "Dastan.Ibraimov", "password123", fromDate, toDate, "Jane", TrainingType.YOGA);
+                "Dastan.Ibraimov", "password123", fromDate, toDate, "Jane", testTrainingType);
 
         assertNotNull(result);
-        verify(traineeRepository).findTrainingsByUsername("Dastan.Ibraimov", fromDate, toDate, "Jane", TrainingType.YOGA);
+        verify(traineeRepository).findTrainingsByUsername("Dastan.Ibraimov", fromDate, toDate, "Jane", testTrainingType);
     }
 
     @Test
@@ -245,7 +260,7 @@ class TraineeServiceTest {
     @Test
     void updateTraineeTrainersList_ShouldUpdateTrainersList() {
         Set<Trainer> trainers = new HashSet<>();
-        testTrainee.setUsername("Dastan.Ibraimov");
+        testTrainee.getUser().setUsername("Dastan.Ibraimov");
 
         when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
         when(traineeRepository.updateTrainersListByUsername("Dastan.Ibraimov", trainers)).thenReturn(testTrainee);

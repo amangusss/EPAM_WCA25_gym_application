@@ -22,12 +22,12 @@ public class TrainerEntityValidationImpl implements TrainerEntityValidation {
             throw new ValidationException("Trainer cannot be null");
         }
 
-        if (trainer.getFirstName() == null || trainer.getFirstName().trim().isEmpty()) {
+        if (trainer.getUser().getFirstName() == null || trainer.getUser().getFirstName().trim().isEmpty()) {
             logger.error("Validation failed - first name is null or empty");
             throw new ValidationException("First name is required");
         }
 
-        if (trainer.getLastName() == null || trainer.getLastName().trim().isEmpty()) {
+        if (trainer.getUser().getLastName() == null || trainer.getUser().getLastName().trim().isEmpty()) {
             logger.error("Validation failed - last name is null or empty");
             throw new ValidationException("Last name is required");
         }

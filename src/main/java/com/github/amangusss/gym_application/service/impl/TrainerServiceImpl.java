@@ -31,14 +31,14 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     public Trainer createTrainer(Trainer trainer) {
-        logger.debug("Creating trainer profile: {} {}", trainer.getFirstName(), trainer.getLastName());
+        logger.debug("Creating trainer profile: {} {}", trainer.getUser().getFirstName(), trainer.getUser().getLastName());
         trainerEntityValidation.validateTrainerForCreationOrUpdate(trainer);
         generateCredentials(trainer);
 
-        trainer.setActive(true);
+        trainer.getUser().setActive(true);
 
         Trainer savedTrainer = trainerRepository.save(trainer);
-        logger.info("Successfully created trainer profile with username: {}", savedTrainer.getUsername());
+        logger.info("Successfully created trainer profile with username: {}", savedTrainer.getUser().getUsername());
         return savedTrainer;
     }
 
@@ -48,7 +48,8 @@ public class TrainerServiceImpl implements TrainerService {
         logger.debug("Finding trainer by username: {}", username);
         authenticationCheck(username, password);
 
-        Trainer trainer = trainerRepository.findByUsername(username);
+        Trainer trainer = trainerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Trainer not found with username: " + username));
         logger.info("Found trainer with username: {}", username);
         return trainer;
     }
@@ -61,12 +62,12 @@ public class TrainerServiceImpl implements TrainerService {
 
         Trainer existingTrainer = findTrainerByUsername(username, password);
 
-        existingTrainer.setFirstName(trainer.getFirstName());
-        existingTrainer.setLastName(trainer.getLastName());
+        existingTrainer.getUser().setFirstName(trainer.getUser().getFirstName());
+        existingTrainer.getUser().setLastName(trainer.getUser().getLastName());
         existingTrainer.setSpecialization(trainer.getSpecialization());
 
-        Trainer updatedTrainer = trainerRepository.update(existingTrainer);
-        logger.info("Successfully updated trainer profile with username: {}", updatedTrainer.getUsername());
+        Trainer updatedTrainer = trainerRepository.save(existingTrainer);
+        logger.info("Successfully updated trainer profile with username: {}", updatedTrainer.getUser().getUsername());
         return updatedTrainer;
     }
 
@@ -75,7 +76,7 @@ public class TrainerServiceImpl implements TrainerService {
     public boolean authenticateTrainer(String username, String password) {
         logger.debug("Authenticating trainer: {}", username);
 
-        boolean authenticated = trainerRepository.existsByUsernameAndPassword(username, password);
+        boolean authenticated = trainerRepository.existsByUserUsernameAndUserPassword(username, password);
 
         if (authenticated) {
             logger.info("Trainer authenticated successfully: {}", username);
@@ -92,7 +93,10 @@ public class TrainerServiceImpl implements TrainerService {
         authenticationCheck(username, oldPassword);
         trainerEntityValidation.validatePasswordChange(oldPassword, newPassword);
 
-        Trainer updatedTrainer = trainerRepository.updatePasswordByUsername(username, oldPassword, newPassword);
+        Trainer trainer = trainerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Trainer not found with username: " + username));
+        trainer.getUser().setPassword(newPassword);
+        Trainer updatedTrainer = trainerRepository.save(trainer);
         logger.info("Successfully changed password for trainer: {}", username);
         return updatedTrainer;
     }
@@ -102,9 +106,12 @@ public class TrainerServiceImpl implements TrainerService {
         logger.debug("Activating trainer: {}", username);
         authenticationCheck(username, password);
 
-        Trainer trainer = trainerRepository.updateActiveStatusByUsername(username, true);
+        Trainer trainer = trainerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Trainer not found with username: " + username));
+        trainer.getUser().setActive(true);
+        Trainer updatedTrainer = trainerRepository.save(trainer);
         logger.info("Successfully activated trainer: {}", username);
-        return trainer;
+        return updatedTrainer;
     }
 
     @Override
@@ -112,9 +119,12 @@ public class TrainerServiceImpl implements TrainerService {
         logger.debug("Deactivating trainer: {}", username);
         authenticationCheck(username, password);
 
-        Trainer trainer = trainerRepository.updateActiveStatusByUsername(username, false);
+        Trainer trainer = trainerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Trainer not found with username: " + username));
+        trainer.getUser().setActive(false);
+        Trainer updatedTrainer = trainerRepository.save(trainer);
         logger.info("Successfully deactivated trainer: {}", username);
-        return trainer;
+        return updatedTrainer;
     }
 
     @Override
@@ -124,36 +134,42 @@ public class TrainerServiceImpl implements TrainerService {
         authenticationCheck(username, password);
         trainerEntityValidation.validateDateRange(fromDate, toDate);
 
-        List<Training> trainings = trainerRepository.findTrainingsByUsername(username, fromDate, toDate, traineeName);
+        Trainer trainer = trainerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Trainer not found with username: " + username));
+
+        List<Training> trainings = trainer.getTrainings().stream()
+                .filter(training -> {
+                    if (fromDate != null && training.getTrainingDate().isBefore(fromDate)) return false;
+                    if (toDate != null && training.getTrainingDate().isAfter(toDate)) return false;
+                    if (traineeName != null && !traineeName.isEmpty()) {
+                        String fullName = training.getTrainee().getUser().getFirstName() + " " +
+                                        training.getTrainee().getUser().getLastName();
+                        if (!fullName.contains(traineeName)) return false;
+                    }
+                    return true;
+                })
+                .toList();
         logger.info("Retrieved {} trainings for trainer: {}", trainings.size(), username);
         return trainings;
     }
 
     private void generateCredentials(Trainer trainer) {
-        String username = usernameGenerator.generateUsername(trainer.getFirstName(), trainer.getLastName(), this::usernameExists);
-        trainer.setUsername(username);
+        String username = usernameGenerator.generateUsername(trainer.getUser().getFirstName(), trainer.getUser().getLastName(), this::usernameExists);
+        trainer.getUser().setUsername(username);
 
         String password = passwordGenerator.generatePassword();
-        trainer.setPassword(password);
+        trainer.getUser().setPassword(password);
 
         logger.debug("Generated credentials for trainer - username: {}", username);
     }
 
     private boolean usernameExists(String username) {
-        try {
-            Trainer trainer = trainerRepository.findByUsername(username);
-            return trainer != null;
-        } catch (Exception e) {
-            logger.debug("Username does not exist: {}", username);
-            return false;
-        }
+        return trainerRepository.findByUserUsername(username).isPresent();
     }
 
     private void authenticationCheck(String username, String password) {
-        if (!trainerRepository.existsByUsernameAndPassword(username, password)) {
-            logger.error("Authentication failed for trainer: {}", username);
-            throw new com.github.amangusss.gym_application.exception.AuthenticationException(
-                    "Authentication failed for trainer: " + username);
+        if (!trainerRepository.existsByUserUsernameAndUserPassword(username, password)) {
+            throw new RuntimeException("Authentication failed for trainer: " + username);
         }
     }
 }

@@ -7,6 +7,7 @@ import com.github.amangusss.gym_application.entity.training.Training;
 import com.github.amangusss.gym_application.exception.AuthenticationException;
 import com.github.amangusss.gym_application.exception.ValidationException;
 import com.github.amangusss.gym_application.repository.TraineeRepository;
+import com.github.amangusss.gym_application.repository.TrainerRepository;
 import com.github.amangusss.gym_application.service.TraineeService;
 import com.github.amangusss.gym_application.util.credentials.PasswordGenerator;
 import com.github.amangusss.gym_application.util.credentials.UsernameGenerator;
@@ -31,20 +32,21 @@ public class TraineeServiceImpl implements TraineeService {
     private static final Logger logger = LoggerFactory.getLogger(TraineeServiceImpl.class);
 
     private final TraineeRepository traineeRepository;
+    private final TrainerRepository trainerRepository;
     private final UsernameGenerator usernameGenerator;
     private final PasswordGenerator passwordGenerator;
     private final TraineeEntityValidation traineeEntityValidation;
 
     @Override
     public Trainee createTrainee(Trainee trainee) {
-        logger.debug("Creating trainee profile: {} {}", trainee.getFirstName(), trainee.getLastName());
+        logger.debug("Creating trainee profile: {} {}", trainee.getUser().getFirstName(), trainee.getUser().getLastName());
         traineeEntityValidation.validateTraineeForCreationOrUpdate(trainee);
         generateCredentials(trainee);
 
-        trainee.setActive(true);
+        trainee.getUser().setActive(true);
 
         Trainee savedTrainee = traineeRepository.save(trainee);
-        logger.info("Successfully created trainee profile with username: {}", savedTrainee.getUsername());
+        logger.info("Successfully created trainee profile with username: {}", savedTrainee.getUser().getUsername());
         return savedTrainee;
     }
 
@@ -54,7 +56,8 @@ public class TraineeServiceImpl implements TraineeService {
         logger.debug("Finding trainee by username: {}", username);
         authenticationCheck(username, password);
 
-        Trainee trainee = traineeRepository.findByUsername(username);
+        Trainee trainee = traineeRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Trainee not found with username: " + username));
         logger.info("Found trainee with username: {}", username);
         return trainee;
     }
@@ -65,14 +68,15 @@ public class TraineeServiceImpl implements TraineeService {
         authenticationCheck(username, password);
         traineeEntityValidation.validateTraineeForCreationOrUpdate(trainee);
 
-        Trainee existingTrainee = traineeRepository.findByUsername(username);
+        Trainee existingTrainee = traineeRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Trainee not found with username: " + username));
 
-        existingTrainee.setFirstName(trainee.getFirstName());
-        existingTrainee.setLastName(trainee.getLastName());
+        existingTrainee.getUser().setFirstName(trainee.getUser().getFirstName());
+        existingTrainee.getUser().setLastName(trainee.getUser().getLastName());
         existingTrainee.setDateOfBirth(trainee.getDateOfBirth());
         existingTrainee.setAddress(trainee.getAddress());
 
-        Trainee updatedTrainee = traineeRepository.update(existingTrainee);
+        Trainee updatedTrainee = traineeRepository.save(existingTrainee);
         logger.info("Successfully updated trainee profile: {}", username);
         return updatedTrainee;
     }
@@ -82,7 +86,9 @@ public class TraineeServiceImpl implements TraineeService {
         logger.debug("Deleting trainee profile: {}", username);
         authenticationCheck(username, password);
 
-        traineeRepository.deleteByUsername(username);
+        Trainee trainee = traineeRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Trainee not found with username: " + username));
+        traineeRepository.delete(trainee);
         logger.info("Successfully deleted trainee profile: {} with cascade deletion of trainings", username);
     }
 
@@ -96,7 +102,7 @@ public class TraineeServiceImpl implements TraineeService {
             return false;
         }
 
-        boolean authenticated = traineeRepository.existsByUsernameAndPassword(username, password);
+        boolean authenticated = traineeRepository.existsByUserUsernameAndUserPassword(username, password);
 
         if (authenticated) {
             logger.info("Trainee authenticated successfully: {}", username);
@@ -113,7 +119,10 @@ public class TraineeServiceImpl implements TraineeService {
         authenticationCheck(username, oldPassword);
         traineeEntityValidation.validatePasswordChange(oldPassword, newPassword);
 
-        Trainee updatedTrainee = traineeRepository.updatePasswordByUsername(username, oldPassword, newPassword);
+        Trainee trainee = traineeRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Trainee not found with username: " + username));
+        trainee.getUser().setPassword(newPassword);
+        Trainee updatedTrainee = traineeRepository.save(trainee);
         logger.info("Successfully changed password for trainee: {}", username);
         return updatedTrainee;
     }
@@ -123,9 +132,12 @@ public class TraineeServiceImpl implements TraineeService {
         logger.debug("Activating trainee: {}", username);
         authenticationCheck(username, password);
 
-        Trainee trainee = traineeRepository.updateActiveStatusByUsername(username, true);
+        Trainee trainee = traineeRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Trainee not found with username: " + username));
+        trainee.getUser().setActive(true);
+        Trainee updatedTrainee = traineeRepository.save(trainee);
         logger.info("Successfully activated trainee: {}", username);
-        return trainee;
+        return updatedTrainee;
     }
 
     @Override
@@ -133,9 +145,12 @@ public class TraineeServiceImpl implements TraineeService {
         logger.debug("Deactivating trainee: {}", username);
         authenticationCheck(username, password);
 
-        Trainee trainee = traineeRepository.updateActiveStatusByUsername(username, false);
+        Trainee trainee = traineeRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Trainee not found with username: " + username));
+        trainee.getUser().setActive(false);
+        Trainee updatedTrainee = traineeRepository.save(trainee);
         logger.info("Successfully deactivated trainee: {}", username);
-        return trainee;
+        return updatedTrainee;
     }
 
     @Override
@@ -146,7 +161,22 @@ public class TraineeServiceImpl implements TraineeService {
         authenticationCheck(username, password);
         traineeEntityValidation.validateDateRange(fromDate, toDate);
 
-        List<Training> trainings = traineeRepository.findTrainingsByUsername(username, fromDate, toDate, trainerName, trainingType);
+        Trainee trainee = traineeRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Trainee not found with username: " + username));
+
+        List<Training> trainings = trainee.getTrainings().stream()
+                .filter(training -> {
+                    if (fromDate != null && training.getTrainingDate().isBefore(fromDate)) return false;
+                    if (toDate != null && training.getTrainingDate().isAfter(toDate)) return false;
+                    if (trainerName != null && !trainerName.isEmpty()) {
+                        String fullName = training.getTrainer().getUser().getFirstName() + " " +
+                                training.getTrainer().getUser().getLastName();
+                        if (!fullName.contains(trainerName)) return false;
+                    }
+                    if (trainingType != null && !training.getTrainingType().equals(trainingType)) return false;
+                    return true;
+                })
+                .toList();
         logger.info("Retrieved {} trainings for trainee: {}", trainings.size(), username);
         return trainings;
     }
@@ -157,9 +187,19 @@ public class TraineeServiceImpl implements TraineeService {
         logger.debug("Getting trainers not assigned to trainee: {}", username);
         authenticationCheck(username, password);
 
-        List<Trainer> trainers = traineeRepository.findTrainersNotAssignedOnTraineeByUsername(username);
-        logger.info("Found {} trainers not assigned to trainee: {}", trainers.size(), username);
-        return trainers;
+        Trainee trainee = traineeRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Trainee not found with username: " + username));
+
+        // Получаем всех тренеров и исключаем назначенных
+        List<Trainer> allTrainers = trainerRepository.findAll();
+        Set<Trainer> assignedTrainers = trainee.getTrainers();
+
+        List<Trainer> unassignedTrainers = allTrainers.stream()
+                .filter(trainer -> !assignedTrainers.contains(trainer))
+                .toList();
+
+        logger.info("Found {} trainers not assigned to trainee: {}", unassignedTrainers.size(), username);
+        return unassignedTrainers;
     }
 
     @Override
@@ -172,30 +212,27 @@ public class TraineeServiceImpl implements TraineeService {
             throw new ValidationException("Trainers set cannot be null");
         }
 
-        Trainee updatedTrainee = traineeRepository.updateTrainersListByUsername(username, trainers);
+        Trainee trainee = traineeRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Trainee not found with username: " + username));
+        trainee.setTrainers(trainers);
+        Trainee updatedTrainee = traineeRepository.save(trainee);
         logger.info("Successfully updated trainers list for trainee: {} with {} trainers",
                 username, trainers.size());
         return updatedTrainee;
     }
 
     private void generateCredentials(Trainee trainee) {
-        String username = usernameGenerator.generateUsername(trainee.getFirstName(), trainee.getLastName(), this::usernameExists);
-        trainee.setUsername(username);
+        String username = usernameGenerator.generateUsername(trainee.getUser().getFirstName(), trainee.getUser().getLastName(), this::usernameExists);
+        trainee.getUser().setUsername(username);
 
         String password = passwordGenerator.generatePassword();
-        trainee.setPassword(password);
+        trainee.getUser().setPassword(password);
 
         logger.debug("Generated credentials for trainee - username: {}", username);
     }
 
     private boolean usernameExists(String username) {
-        try {
-            Trainee trainee = traineeRepository.findByUsername(username);
-            return trainee != null;
-        } catch (Exception e) {
-            logger.debug("Username does not exist: {}", username);
-            return false;
-        }
+        return traineeRepository.findByUserUsername(username).isPresent();
     }
 
     private void authenticationCheck(String username, String password) {
@@ -204,7 +241,7 @@ public class TraineeServiceImpl implements TraineeService {
             throw new AuthenticationException("Username and password cannot be null or empty");
         }
 
-        if (!traineeRepository.existsByUsernameAndPassword(username, password)) {
+        if (!traineeRepository.existsByUserUsernameAndUserPassword(username, password)) {
             logger.error("Authentication failed for trainee: {}", username);
             throw new AuthenticationException(
                     "Authentication failed for trainee: " + username);
