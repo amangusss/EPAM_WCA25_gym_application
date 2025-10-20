@@ -7,9 +7,13 @@ import com.github.amangusss.gym_application.entity.training.Training;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Column;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.JoinColumn;
@@ -20,7 +24,6 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -32,10 +35,18 @@ import java.util.Set;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
+@Builder
 @Entity
 @Table(name = "trainees")
-public class Trainee extends User {
+public class Trainee {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private User user;
 
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
@@ -66,7 +77,7 @@ public class Trainee extends User {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Trainee trainee = (Trainee) o;
-        return getId() != null && Objects.equals(getId(), trainee.getId());
+        return id != null && Objects.equals(id, trainee.id);
     }
 
     @Override

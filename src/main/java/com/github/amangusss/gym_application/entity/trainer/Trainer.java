@@ -6,14 +6,17 @@ import com.github.amangusss.gym_application.entity.trainee.Trainee;
 import com.github.amangusss.gym_application.entity.training.Training;
 
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.JoinColumn;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,7 +24,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.experimental.SuperBuilder;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -32,13 +34,21 @@ import java.util.Set;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
+@Builder
 @Entity
 @Table(name = "trainers")
-public class Trainer extends User {
+public class Trainer {
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private User user;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "specialization_id", nullable = false)
     private TrainingType specialization;
 
     @Builder.Default
@@ -59,7 +69,7 @@ public class Trainer extends User {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Trainer trainer = (Trainer) o;
-        return getId() != null && Objects.equals(getId(), trainer.getId());
+        return id != null && Objects.equals(id, trainer.id);
     }
 
     @Override
