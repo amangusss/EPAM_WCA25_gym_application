@@ -173,8 +173,7 @@ public class TraineeServiceImpl implements TraineeService {
                                 training.getTrainer().getUser().getLastName();
                         if (!fullName.contains(trainerName)) return false;
                     }
-                    if (trainingType != null && !training.getTrainingType().equals(trainingType)) return false;
-                    return true;
+                    return trainingType == null || training.getTrainingType().equals(trainingType);
                 })
                 .toList();
         logger.info("Retrieved {} trainings for trainee: {}", trainings.size(), username);

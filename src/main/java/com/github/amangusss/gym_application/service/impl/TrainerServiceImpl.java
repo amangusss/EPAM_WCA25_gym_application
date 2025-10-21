@@ -145,7 +145,7 @@ public class TrainerServiceImpl implements TrainerService {
                     if (traineeName != null && !traineeName.isEmpty()) {
                         String fullName = training.getTrainee().getUser().getFirstName() + " " + 
                                         training.getTrainee().getUser().getLastName();
-                        if (!fullName.contains(traineeName)) return false;
+                        return fullName.contains(traineeName);
                     }
                     return true;
                 })
