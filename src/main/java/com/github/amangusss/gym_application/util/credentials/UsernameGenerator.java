@@ -1,6 +1,7 @@
 package com.github.amangusss.gym_application.util.credentials;
 
 import com.github.amangusss.gym_application.exception.ValidationException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
