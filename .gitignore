@@ -1,22 +1,37 @@
-# IntelliJ IDEA
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
 .idea/
 *.iml
-out/
+*.iws
+*.ipr
 
 # Maven
 target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
 
-# Compiled class file
-*.class
-
-# Log file
+# Logs
+logs/
 *.log
 
-# BlueJ files
-*.ctxt
+# OS
+.DS_Store
+Thumbs.db
 
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
+# Sensitive data
+application-local.yaml
+application-dev.yaml
+application-prod.yaml
 
 # Package Files #
 *.jar
