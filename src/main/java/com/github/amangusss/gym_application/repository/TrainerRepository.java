@@ -1,7 +1,6 @@
 package com.github.amangusss.gym_application.repository;
 
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

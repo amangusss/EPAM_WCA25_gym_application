@@ -1,16 +1,15 @@
 package com.github.amangusss.gym_application.exception;
 
+import com.github.amangusss.gym_application.dto.error.ErrorResponse;
+
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -18,78 +17,82 @@ import java.util.UUID;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorResponse> handleValidationError(MethodArgumentNotValidException ex) {
         String transactionId = UUID.randomUUID().toString();
-        Map<String, String> errors = new HashMap<>();
 
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
+        StringBuilder errorMessages = new StringBuilder();
+        ex.getBindingResult().getAllErrors().forEach(error -> {
+            String message = error.getDefaultMessage();
+            errorMessages.append(message).append("; ");
         });
 
-        log.error("[Transaction: {}] Validation error: {}", transactionId, errors);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+        String finalMessage = errorMessages.toString();
+        log.error("[Transaction: {}] Validation error: {}", transactionId, finalMessage);
+
+        ErrorResponse error = new ErrorResponse("Validation Error", finalMessage);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<Map<String, String>> handleAuthenticationException(AuthenticationException ex) {
+    public ResponseEntity<ErrorResponse> handleAuthenticationError(AuthenticationException ex) {
         String transactionId = UUID.randomUUID().toString();
-        Map<String, String> error = new HashMap<>();
-        error.put("error", ex.getMessage());
-
         log.error("[Transaction: {}] Authentication error: {}", transactionId, ex.getMessage());
+
+        ErrorResponse error = new ErrorResponse("Authentication Error", ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
     @ExceptionHandler(TraineeNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleTraineeNotFoundException(TraineeNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleTraineeNotFound(TraineeNotFoundException ex) {
         String transactionId = UUID.randomUUID().toString();
-        Map<String, String> error = new HashMap<>();
-        error.put("error", ex.getMessage());
-
         log.error("[Transaction: {}] Trainee not found: {}", transactionId, ex.getMessage());
+
+        ErrorResponse error = new ErrorResponse("Trainee Not Found", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(TrainerNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleTrainerNotFoundException(TrainerNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleTrainerNotFound(TrainerNotFoundException ex) {
         String transactionId = UUID.randomUUID().toString();
-        Map<String, String> error = new HashMap<>();
-        error.put("error", ex.getMessage());
-
         log.error("[Transaction: {}] Trainer not found: {}", transactionId, ex.getMessage());
+
+        ErrorResponse error = new ErrorResponse("Trainer Not Found", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(TrainingTypeNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleTrainingTypeNotFound(TrainingTypeNotFoundException ex) {
+        String transactionId = UUID.randomUUID().toString();
+        log.error("[Transaction: {}] Training type not found: {}", transactionId, ex.getMessage());
+
+        ErrorResponse error = new ErrorResponse("Training Type Not Found", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<Map<String, String>> handleValidationException(ValidationException ex) {
+    public ResponseEntity<ErrorResponse> handleValidationException(ValidationException ex) {
         String transactionId = UUID.randomUUID().toString();
-        Map<String, String> error = new HashMap<>();
-        error.put("error", ex.getMessage());
-
         log.error("[Transaction: {}] Validation error: {}", transactionId, ex.getMessage());
+
+        ErrorResponse error = new ErrorResponse("Validation Error", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException ex) {
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
         String transactionId = UUID.randomUUID().toString();
-        Map<String, String> error = new HashMap<>();
-        error.put("error", ex.getMessage());
-
         log.error("[Transaction: {}] Illegal argument: {}", transactionId, ex.getMessage());
+
+        ErrorResponse error = new ErrorResponse("Bad Request", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleGenericError(Exception ex) {
         String transactionId = UUID.randomUUID().toString();
-        Map<String, String> error = new HashMap<>();
-        error.put("error", "Internal server error");
-        error.put("details", ex.getMessage());
-
         log.error("[Transaction: {}] Unexpected error: {}", transactionId, ex.getMessage(), ex);
+
+        ErrorResponse error = new ErrorResponse("Internal Server Error", "Something went wrong. Please try again later.");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

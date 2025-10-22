@@ -3,6 +3,7 @@ package com.github.amangusss.gym_application.service.impl;
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.training.Training;
 import com.github.amangusss.gym_application.repository.TrainerRepository;
+import com.github.amangusss.gym_application.repository.UserRepository;
 import com.github.amangusss.gym_application.service.TrainerService;
 import com.github.amangusss.gym_application.util.credentials.PasswordGenerator;
 import com.github.amangusss.gym_application.util.credentials.UsernameGenerator;
@@ -26,6 +27,7 @@ public class TrainerServiceImpl implements TrainerService {
     public static final Logger logger = LoggerFactory.getLogger(TrainerServiceImpl.class);
 
     private final TrainerRepository trainerRepository;
+    private final UserRepository userRepository;
     private final UsernameGenerator usernameGenerator;
     private final PasswordGenerator passwordGenerator;
     private final TrainerEntityValidation trainerEntityValidation;
@@ -165,7 +167,7 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     private boolean usernameExists(String username) {
-        return trainerRepository.findByUserUsername(username).isPresent();
+        return userRepository.existsByUsername(username);
     }
 
     private void authenticationCheck(String username, String password) {

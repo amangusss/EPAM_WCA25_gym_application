@@ -1,6 +1,7 @@
 package com.github.amangusss.gym_application.service.impl;
 
 import com.github.amangusss.gym_application.entity.TrainingType;
+import com.github.amangusss.gym_application.exception.TrainingTypeNotFoundException;
 import com.github.amangusss.gym_application.repository.TrainingTypeRepository;
 import com.github.amangusss.gym_application.service.TrainingTypeService;
 
@@ -31,6 +32,6 @@ public class TrainingTypeServiceImpl implements TrainingTypeService {
     public TrainingType findById(Long id) {
         log.info("Finding training type by id: {}", id);
         return trainingTypeRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Training type not found with id: " + id));
+                .orElseThrow(() -> new TrainingTypeNotFoundException(id));
     }
 }
