@@ -81,4 +81,17 @@ public class TrainerMapper {
                 .specialization(specialization)
                 .build();
     }
+
+    public Trainer toUpdateEntity(TrainerDTO.Request.Update request, TrainingType specialization) {
+        User user = User.builder()
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .isActive(request.isActive())
+                .build();
+
+        return Trainer.builder()
+                .user(user)
+                .specialization(specialization)
+                .build();
+    }
 }

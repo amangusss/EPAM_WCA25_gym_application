@@ -8,6 +8,10 @@ import java.time.LocalDate;
 
 public class TrainingDTO {
 
+    private TrainingDTO() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
     public static class Request {
         public record Create(
                 @NotBlank String traineeUsername,
@@ -17,6 +21,18 @@ public class TrainingDTO {
                 @NotNull @Positive Integer trainingDuration
         ) {}
 
+        public record TrainerTrainingsFilter(
+                LocalDate periodFrom,
+                LocalDate periodTo,
+                String traineeName
+        ) {}
+
+        public record TraineeTrainingsFilter(
+                LocalDate periodFrom,
+                LocalDate periodTo,
+                String trainerName,
+                String trainingType
+        ) {}
     }
 
     public static class Response {

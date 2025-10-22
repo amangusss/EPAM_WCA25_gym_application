@@ -4,6 +4,10 @@ import jakarta.validation.constraints.NotBlank;
 
 public class AuthDTO {
 
+    private AuthDTO() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
     public static class Request {
         public record Login(
                 @NotBlank String username,

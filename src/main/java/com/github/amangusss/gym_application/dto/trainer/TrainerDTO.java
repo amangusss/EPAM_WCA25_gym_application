@@ -8,6 +8,10 @@ import java.util.List;
 
 public class TrainerDTO {
 
+    private TrainerDTO() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
     public static class Request {
         public record Register(
                 @NotBlank String firstName,
@@ -16,14 +20,13 @@ public class TrainerDTO {
         ) {}
 
         public record Update(
-                @NotBlank String username,
                 @NotBlank String firstName,
                 @NotBlank String lastName,
+                @NotNull Long specialization,
                 @NotNull Boolean isActive
         ) {}
 
         public record UpdateStatus(
-                @NotBlank String username,
                 @NotNull Boolean isActive
         ) {}
     }

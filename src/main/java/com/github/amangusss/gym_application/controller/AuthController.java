@@ -48,7 +48,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping("/change-password")
+    @PutMapping(value = "/change-password", consumes = "application/json")
     @Operation(summary = "Change password", description = "Changes user password (trainee or trainer)")
     public ResponseEntity<Void> changePassword(@Valid @RequestBody AuthDTO.Request.ChangePassword request) {
 

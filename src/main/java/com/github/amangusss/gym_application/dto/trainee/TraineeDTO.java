@@ -9,6 +9,10 @@ import java.util.List;
 
 public class TraineeDTO {
 
+    private TraineeDTO() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
     public static class Request {
         public record Register(
                 @NotBlank String firstName,
@@ -18,7 +22,6 @@ public class TraineeDTO {
         ) {}
 
         public record Update(
-                @NotBlank String username,
                 @NotBlank String firstName,
                 @NotBlank String lastName,
                 LocalDate dateOfBirth,
@@ -29,6 +32,11 @@ public class TraineeDTO {
         public record UpdateStatus(
                 @NotBlank String username,
                 @NotNull Boolean isActive
+        ) {}
+
+        public record UpdateTrainers(
+                @NotBlank String traineeUsername,
+                @NotNull List<String> trainerUsernames
         ) {}
     }
 

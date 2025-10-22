@@ -48,20 +48,15 @@ public class TrainerFacade {
         return trainerMapper.toProfileResponse(trainer);
     }
 
-    public TrainerDTO.Response.Updated updateTrainer(TrainerDTO.Request.Update request, String password) {
-        log.debug("Updating trainer profile for username: {}", request.username());
+    public TrainerDTO.Response.Updated updateTrainer(TrainerDTO.Request.Update request, String username, String password) {
+        log.debug("Updating trainer profile for username: {}", username);
 
-        Trainer updateData = Trainer.builder()
-                .user(com.github.amangusss.gym_application.entity.User.builder()
-                        .firstName(request.firstName())
-                        .lastName(request.lastName())
-                        .isActive(request.isActive())
-                        .build())
-                .build();
+        TrainingType specialization = trainingTypeService.findById(request.specialization());
+        Trainer updateData = trainerMapper.toUpdateEntity(request, specialization);
 
-        Trainer updated = trainerService.updateTrainer(request.username(), password, updateData);
+        Trainer updated = trainerService.updateTrainer(username, password, updateData);
 
-        log.debug("Trainer profile updated successfully for username: {}", request.username());
+        log.debug("Trainer profile updated successfully for username: {}", username);
         return trainerMapper.toUpdatedResponse(updated);
     }
 

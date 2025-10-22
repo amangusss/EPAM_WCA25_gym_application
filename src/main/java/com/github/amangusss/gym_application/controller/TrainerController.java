@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,7 +36,7 @@ public class TrainerController {
 
     private final TrainerFacade trainerFacade;
 
-    @PostMapping("/register")
+    @PostMapping(value = "/register", consumes = "application/json", produces = "application/json")
     @Operation(summary = "Register new trainer", description = "Creates a new trainer profile and generates username and password")
     public ResponseEntity<TrainerDTO.Response.Registered> registerTrainer(
             @Valid @RequestBody TrainerDTO.Request.Register request) {
@@ -51,7 +50,7 @@ public class TrainerController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{username}")
+    @GetMapping(value = "/{username}", produces = "application/json")
     @Operation(summary = "Get trainer profile", description = "Retrieves trainer profile by username")
     public ResponseEntity<TrainerDTO.Response.Profile> getTrainerProfile(
             @Parameter(description = "Trainer username") @PathVariable String username,
@@ -66,22 +65,23 @@ public class TrainerController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping
+    @PutMapping(value = "/{username}", consumes = "application/json", produces = "application/json")
     @Operation(summary = "Update trainer profile", description = "Updates trainer profile information")
     public ResponseEntity<TrainerDTO.Response.Updated> updateTrainer(
             @Valid @RequestBody TrainerDTO.Request.Update request,
+            @Parameter(description = "Trainer username") @PathVariable String username,
             @Parameter(description = "Trainer password") @RequestParam String password) {
 
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] PUT /api/trainers", transactionId);
 
-        TrainerDTO.Response.Updated response = trainerFacade.updateTrainer(request, password);
+        TrainerDTO.Response.Updated response = trainerFacade.updateTrainer(request, username, password);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/{username}/activate")
+    @PatchMapping(value = "/{username}/activate", consumes = "application/json")
     @Operation(summary = "Activate/Deactivate trainer", description = "Changes trainer active status")
     public ResponseEntity<Void> updateTrainerStatus(
             @Parameter(description = "Trainer username") @PathVariable String username,
@@ -97,20 +97,18 @@ public class TrainerController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/{username}/trainings")
+    @GetMapping(value = "/{username}/trainings", produces = "application/json")
     @Operation(summary = "Get trainer trainings list", description = "Retrieves list of trainings for a trainer with optional filters")
     public ResponseEntity<List<TrainingDTO.Response.TrainerTraining>> getTrainerTrainings(
             @Parameter(description = "Trainer username") @PathVariable String username,
             @Parameter(description = "Trainer password") @RequestParam String password,
-            @Parameter(description = "Period from date") @RequestParam(required = false) LocalDate periodFrom,
-            @Parameter(description = "Period to date") @RequestParam(required = false) LocalDate periodTo,
-            @Parameter(description = "Trainee name") @RequestParam(required = false) String traineeName) {
+            @Parameter(description = "Training filters") TrainingDTO.Request.TrainerTrainingsFilter filter) {
 
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] GET /api/trainers/{}/trainings", transactionId, username);
 
         List<TrainingDTO.Response.TrainerTraining> response = trainerFacade.getTrainerTrainings(
-                username, password, periodFrom, periodTo, traineeName);
+                username, password, filter.periodFrom(), filter.periodTo(), filter.traineeName());
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);

@@ -26,7 +26,7 @@ public class TrainingTypeController {
 
     private final TrainingTypeFacade trainingTypeFacade;
 
-    @GetMapping
+    @GetMapping(produces = "application/json")
     @Operation(summary = "Get training types", description = "Retrieves all available training types")
     public ResponseEntity<List<TrainingTypeDTO.Response.TrainingType>> getAllTrainingTypes() {
 

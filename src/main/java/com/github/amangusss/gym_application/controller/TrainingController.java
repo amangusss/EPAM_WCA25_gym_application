@@ -28,7 +28,7 @@ public class TrainingController {
 
     private final TrainingFacade trainingFacade;
 
-    @PostMapping
+    @PostMapping(consumes = "application/json")
     @Operation(summary = "Add training", description = "Creates a new training session")
     public ResponseEntity<Void> addTraining(@Valid @RequestBody TrainingDTO.Request.Create request) {
 

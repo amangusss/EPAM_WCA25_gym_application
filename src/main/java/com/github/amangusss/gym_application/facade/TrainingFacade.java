@@ -4,6 +4,8 @@ import com.github.amangusss.gym_application.dto.training.TrainingDTO;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.training.Training;
+import com.github.amangusss.gym_application.exception.TraineeNotFoundException;
+import com.github.amangusss.gym_application.exception.TrainerNotFoundException;
 import com.github.amangusss.gym_application.repository.TraineeRepository;
 import com.github.amangusss.gym_application.repository.TrainerRepository;
 import com.github.amangusss.gym_application.service.TrainingService;
@@ -27,10 +29,10 @@ public class TrainingFacade {
                 request.trainingName(), request.traineeUsername(), request.trainerUsername());
 
         Trainee trainee = traineeRepository.findByUserUsername(request.traineeUsername())
-                .orElseThrow(() -> new IllegalArgumentException("Trainee not found: " + request.traineeUsername()));
+                .orElseThrow(() -> new TraineeNotFoundException("Trainee not found: " + request.traineeUsername()));
 
         Trainer trainer = trainerRepository.findByUserUsername(request.trainerUsername())
-                .orElseThrow(() -> new IllegalArgumentException("Trainer not found: " + request.trainerUsername()));
+                .orElseThrow(() -> new TrainerNotFoundException("Trainer not found: " + request.trainerUsername()));
 
         Training training = Training.builder()
                 .trainee(trainee)

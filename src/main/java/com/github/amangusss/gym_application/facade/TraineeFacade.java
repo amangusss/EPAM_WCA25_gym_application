@@ -2,12 +2,12 @@ package com.github.amangusss.gym_application.facade;
 
 import com.github.amangusss.gym_application.dto.trainee.TraineeDTO;
 import com.github.amangusss.gym_application.dto.trainer.TrainerDTO;
-import com.github.amangusss.gym_application.dto.trainer.UpdateTrainersDTO;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
 import com.github.amangusss.gym_application.entity.TrainingType;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.training.Training;
+import com.github.amangusss.gym_application.exception.TrainerNotFoundException;
 import com.github.amangusss.gym_application.mapper.TraineeMapper;
 import com.github.amangusss.gym_application.mapper.TrainerMapper;
 import com.github.amangusss.gym_application.mapper.TrainingMapper;
@@ -56,8 +56,8 @@ public class TraineeFacade {
         return traineeMapper.toProfileResponse(trainee);
     }
 
-    public TraineeDTO.Response.Updated updateTrainee(TraineeDTO.Request.Update request, String password) {
-        log.debug("Updating trainee profile for username: {}", request.username());
+    public TraineeDTO.Response.Updated updateTrainee(TraineeDTO.Request.Update request, String username, String password) {
+        log.debug("Updating trainee profile for username: {}", username);
 
         Trainee updateData = Trainee.builder()
                 .user(com.github.amangusss.gym_application.entity.User.builder()
@@ -69,9 +69,9 @@ public class TraineeFacade {
                 .address(request.address())
                 .build();
 
-        Trainee updated = traineeService.updateTrainee(request.username(), password, updateData);
+        Trainee updated = traineeService.updateTrainee(username, password, updateData);
 
-        log.debug("Trainee profile updated successfully for username: {}", request.username());
+        log.debug("Trainee profile updated successfully for username: {}", username);
         return traineeMapper.toUpdatedResponse(updated);
     }
 
@@ -129,13 +129,13 @@ public class TraineeFacade {
     }
 
     public List<TrainerDTO.Response.InList> updateTraineeTrainers(
-            String username, UpdateTrainersDTO.Request.Update request, String password) {
+            String username, TraineeDTO.Request.UpdateTrainers request, String password) {
         log.debug("Updating trainee's trainers list for username: {} with {} trainers",
                 username, request.trainerUsernames().size());
 
         Set<Trainer> trainers = request.trainerUsernames().stream()
                 .map(trainerUsername -> trainerRepository.findByUserUsername(trainerUsername)
-                        .orElseThrow(() -> new IllegalArgumentException("Trainer not found: " + trainerUsername)))
+                        .orElseThrow(() -> new TrainerNotFoundException("Trainer not found: " + trainerUsername)))
                 .collect(Collectors.toSet());
 
         Trainee updated = traineeService.updateTraineeTrainersList(username, password, trainers);
