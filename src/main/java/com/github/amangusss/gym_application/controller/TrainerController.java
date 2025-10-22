@@ -73,7 +73,7 @@ public class TrainerController {
             @Parameter(description = "Trainer password") @RequestParam String password) {
 
         String transactionId = UUID.randomUUID().toString();
-        log.info("[Transaction: {}] PUT /api/trainers", transactionId);
+        log.info("[Transaction: {}] PUT /api/trainers/{}", transactionId, username);
 
         TrainerDTO.Response.Updated response = trainerFacade.updateTrainer(request, username, password);
 

@@ -106,7 +106,7 @@ public class TraineeController {
             @Parameter(description = "Trainee password") @RequestParam String password) {
 
         String transactionId = UUID.randomUUID().toString();
-        log.info("[Transaction: {}] PUT /api/trainees", transactionId);
+        log.info("[Transaction: {}] PUT /api/trainees/{}", transactionId, username);
 
         TraineeDTO.Response.Updated response = traineeFacade.updateTrainee(request, username, password);
 
