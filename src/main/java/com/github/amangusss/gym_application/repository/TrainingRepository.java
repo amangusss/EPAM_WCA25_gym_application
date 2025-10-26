@@ -2,7 +2,9 @@ package com.github.amangusss.gym_application.repository;
 
 import com.github.amangusss.gym_application.entity.training.Training;
 
-public interface TrainingRepository {
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-    Training save(Training training);
+@Repository
+public interface TrainingRepository extends JpaRepository<Training, Long> {
 }

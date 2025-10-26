@@ -1,0 +1,30 @@
+password:
+  characters: ${PASSWORD_CHARACTERS:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789}
+  length: ${PASSWORD_LENGTH:10}
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/gym.application}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        use_sql_comments: false
+        generate_statistics: false
+
+  output:
+    ansi:
+      enabled: always
+
+logging:
+  level:
+    org.springframework: INFO
+    com.github.amangusss: DEBUG

@@ -1,18 +1,19 @@
 package com.github.amangusss.gym_application.repository;
 
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
-import com.github.amangusss.gym_application.entity.training.Training;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
-import java.util.List;
+import java.util.Optional;
 
-public interface TrainerRepository {
-
-    Trainer save(Trainer trainer);
-    boolean existsByUsernameAndPassword(String username, String password);
-    Trainer findByUsername(String username);
-    Trainer updatePasswordByUsername(String username, String oldPassword, String newPassword);
-    Trainer update(Trainer trainer);
-    Trainer updateActiveStatusByUsername(String username, boolean isActive);
-    List<Training> findTrainingsByUsername(String username, LocalDate fromDate, LocalDate toDate, String traineeName);
+@Repository
+public interface TrainerRepository extends JpaRepository<Trainer, Long> {
+    
+    @Query("SELECT t FROM Trainer t LEFT JOIN FETCH t.user WHERE t.user.username = :username")
+    Optional<Trainer> findByUserUsername(@Param("username") String username);
+    
+    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM Trainer t WHERE t.user.username = :username AND t.user.password = :password")
+    boolean existsByUserUsernameAndUserPassword(@Param("username") String username, @Param("password") String password);
 }

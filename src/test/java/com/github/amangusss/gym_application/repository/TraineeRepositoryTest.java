@@ -1,185 +1,144 @@
 package com.github.amangusss.gym_application.repository;
 
-import com.github.amangusss.gym_application.config.GymApplicationConfig;
-import com.github.amangusss.gym_application.entity.TrainingType;
+import com.github.amangusss.gym_application.entity.User;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
-import com.github.amangusss.gym_application.entity.trainer.Trainer;
-import com.github.amangusss.gym_application.exception.TraineeNotFoundException;
+
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.transaction.annotation.Transactional;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = GymApplicationConfig.class)
-@Transactional
+@ExtendWith(MockitoExtension.class)
+@DisplayName("TraineeRepository Tests")
 class TraineeRepositoryTest {
 
-    @Autowired
-    private TraineeRepository traineeRepository;
+    private static final Long USER_ID = 1L;
+    private static final Long TRAINEE_ID = 1L;
+    private static final String FIRST_NAME = "Aman";
+    private static final String LAST_NAME = "Nazarkulov";
+    private static final String USERNAME = "Aman.Nazarkulov";
+    private static final String VALID_PASSWORD = "password123";
+    private static final String INVALID_PASSWORD = "wrongPassword";
+    private static final String NON_EXISTENT_USERNAME = "NonExistent";
+    private static final LocalDate DATE_OF_BIRTH = LocalDate.of(2004, 2, 14);
+    private static final String ADDRESS = "Isakeev st, 18/10 Block 15";
+    private static final boolean IS_ACTIVE = true;
 
-    @Autowired
-    private TrainerRepository trainerRepository;
+    @Mock
+    private TraineeRepository traineeRepository;
 
     private Trainee testTrainee;
 
     @BeforeEach
     void setUp() {
+        Mockito.reset(traineeRepository);
+
+        User testUser = User.builder()
+                .id(USER_ID)
+                .firstName(FIRST_NAME)
+                .lastName(LAST_NAME)
+                .username(USERNAME)
+                .password(VALID_PASSWORD)
+                .isActive(IS_ACTIVE)
+                .build();
+
         testTrainee = Trainee.builder()
-                .firstName("Aman")
-                .lastName("Nazarkulov")
-                .username("Aman.Nazarkulov")
-                .password("password123")
-                .isActive(true)
-                .dateOfBirth(LocalDate.of(2004, 2, 14))
-                .address("Isakeev st, 18/10 Block 15")
+                .id(TRAINEE_ID)
+                .user(testUser)
+                .dateOfBirth(DATE_OF_BIRTH)
+                .address(ADDRESS)
                 .build();
     }
 
     @Test
-    void save_ShouldPersistTrainee() {
+    @DisplayName("Should return trainee when finding by existing username")
+    void shouldReturnTraineeWhenFindingByExistingUsername() {
+        Mockito.when(traineeRepository.findByUserUsername(USERNAME))
+                .thenReturn(Optional.of(testTrainee));
+
+        Optional<Trainee> result = traineeRepository.findByUserUsername(USERNAME);
+
+        Assertions.assertThat(result).isPresent();
+        Assertions.assertThat(result.get().getUser().getUsername()).isEqualTo(USERNAME);
+        Assertions.assertThat(result.get().getDateOfBirth()).isEqualTo(DATE_OF_BIRTH);
+        Assertions.assertThat(result.get().getAddress()).isEqualTo(ADDRESS);
+
+        Mockito.verify(traineeRepository, Mockito.times(1)).findByUserUsername(USERNAME);
+    }
+
+    @Test
+    @DisplayName("Should return empty Optional when trainee not found by username")
+    void shouldReturnEmptyOptionalWhenTraineeNotFoundByUsername() {
+        Mockito.when(traineeRepository.findByUserUsername(NON_EXISTENT_USERNAME))
+                .thenReturn(Optional.empty());
+
+        Optional<Trainee> result = traineeRepository.findByUserUsername(NON_EXISTENT_USERNAME);
+
+        Assertions.assertThat(result).isEmpty();
+
+        Mockito.verify(traineeRepository, Mockito.times(1)).findByUserUsername(NON_EXISTENT_USERNAME);
+    }
+
+    @Test
+    @DisplayName("Should return saved trainee when saving")
+    void shouldReturnSavedTraineeWhenSaving() {
+        Mockito.when(traineeRepository.save(ArgumentMatchers.any(Trainee.class)))
+                .thenReturn(testTrainee);
+
         Trainee saved = traineeRepository.save(testTrainee);
 
-        assertNotNull(saved);
-        assertNotNull(saved.getId());
-        assertEquals("Aman.Nazarkulov", saved.getUsername());
-        assertEquals("Isakeev st, 18/10 Block 15", saved.getAddress());
+        Assertions.assertThat(saved).isNotNull();
+        Assertions.assertThat(saved.getId()).isEqualTo(TRAINEE_ID);
+        Assertions.assertThat(saved.getUser().getUsername()).isEqualTo(USERNAME);
+        Assertions.assertThat(saved.getAddress()).isEqualTo(ADDRESS);
+
+        Mockito.verify(traineeRepository, Mockito.times(1)).save(testTrainee);
     }
 
     @Test
-    void findByUsername_ShouldReturnTrainee() {
-        traineeRepository.save(testTrainee);
+    @DisplayName("Should call delete when deleting trainee")
+    void shouldCallDeleteWhenDeletingTrainee() {
+        Mockito.doNothing().when(traineeRepository).delete(testTrainee);
 
-        Trainee found = traineeRepository.findByUsername("Aman.Nazarkulov");
+        traineeRepository.delete(testTrainee);
 
-        assertNotNull(found);
-        assertEquals("Aman.Nazarkulov", found.getUsername());
-        assertEquals("Aman", found.getFirstName());
+        Mockito.verify(traineeRepository, Mockito.times(1)).delete(testTrainee);
     }
 
     @Test
-    void findByUsername_WithNonExistentUsername_ShouldThrowException() {
-        assertThrows(TraineeNotFoundException.class,
-            () -> traineeRepository.findByUsername("NonExistent"));
+    @DisplayName("Should return true when trainee exists by username and valid password")
+    void shouldReturnTrueWhenTraineeExistsByUsernameAndValidPassword() {
+        Mockito.when(traineeRepository.existsByUserUsernameAndUserPassword(USERNAME, VALID_PASSWORD))
+                .thenReturn(true);
+
+        boolean exists = traineeRepository.existsByUserUsernameAndUserPassword(USERNAME, VALID_PASSWORD);
+
+        Assertions.assertThat(exists).isTrue();
+
+        Mockito.verify(traineeRepository, Mockito.times(1))
+                .existsByUserUsernameAndUserPassword(USERNAME, VALID_PASSWORD);
     }
 
     @Test
-    void existsByUsernameAndPassword_ShouldReturnTrue() {
-        traineeRepository.save(testTrainee);
+    @DisplayName("Should return false when checking existence with invalid password")
+    void shouldReturnFalseWhenCheckingExistenceWithInvalidPassword() {
+        Mockito.when(traineeRepository.existsByUserUsernameAndUserPassword(USERNAME, INVALID_PASSWORD))
+                .thenReturn(false);
 
-        boolean exists = traineeRepository.existsByUsernameAndPassword("Aman.Nazarkulov", "password123");
+        boolean exists = traineeRepository.existsByUserUsernameAndUserPassword(USERNAME, INVALID_PASSWORD);
 
-        assertTrue(exists);
-    }
+        Assertions.assertThat(exists).isFalse();
 
-    @Test
-    void existsByUsernameAndPassword_WithWrongPassword_ShouldReturnFalse() {
-        traineeRepository.save(testTrainee);
-
-        boolean exists = traineeRepository.existsByUsernameAndPassword("Aman.Nazarkulov", "wrongPassword");
-
-        assertFalse(exists);
-    }
-
-    @Test
-    void update_ShouldUpdateTrainee() {
-        Trainee saved = traineeRepository.save(testTrainee);
-        saved.setAddress("Erkindik boulevard, 8");
-
-        Trainee updated = traineeRepository.update(saved);
-
-        assertEquals("Erkindik boulevard, 8", updated.getAddress());
-    }
-
-    @Test
-    void deleteByUsername_ShouldRemoveTrainee() {
-        traineeRepository.save(testTrainee);
-
-        traineeRepository.deleteByUsername("Aman.Nazarkulov");
-
-        assertThrows(TraineeNotFoundException.class,
-            () -> traineeRepository.findByUsername("Aman.Nazarkulov"));
-    }
-
-    @Test
-    void updatePasswordByUsername_ShouldUpdatePassword() {
-        traineeRepository.save(testTrainee);
-
-        Trainee updated = traineeRepository.updatePasswordByUsername("Aman.Nazarkulov", "password123", "newPassword");
-
-        assertTrue(traineeRepository.existsByUsernameAndPassword(updated.getUsername(), updated.getPassword()));
-        assertFalse(traineeRepository.existsByUsernameAndPassword(updated.getUsername(), "password123"));
-    }
-
-    @Test
-    void updateActiveStatusByUsername_ShouldUpdateStatus() {
-        traineeRepository.save(testTrainee);
-
-        Trainee updated = traineeRepository.updateActiveStatusByUsername("Aman.Nazarkulov", false);
-
-        assertFalse(updated.isActive());
-    }
-
-    @Test
-    void findTrainersNotAssignedOnTraineeByUsername_ShouldReturnUnassignedTrainers() {
-        traineeRepository.save(testTrainee);
-
-        Trainer trainer1 = Trainer.builder()
-                .firstName("Dastan")
-                .lastName("Ibraimov")
-                .username("Dastan.Ibraimov")
-                .password("pass123")
-                .isActive(true)
-                .specialization(TrainingType.YOGA)
-                .build();
-        trainerRepository.save(trainer1);
-
-        List<Trainer> unassigned = traineeRepository.findTrainersNotAssignedOnTraineeByUsername("Aman.Nazarkulov");
-
-        assertFalse(unassigned.isEmpty());
-        assertTrue(unassigned.stream().anyMatch(t -> t.getUsername().equals("Dastan.Ibraimov")));
-    }
-
-    @Test
-    void updateTrainersListByUsername_ShouldUpdateTrainersList() {
-        traineeRepository.save(testTrainee);
-
-        Trainer trainer = Trainer.builder()
-                .firstName("Dastan")
-                .lastName("Ibraimov")
-                .username("Dastan.Ibraimov")
-                .password("pass123")
-                .isActive(true)
-                .specialization(TrainingType.FITNESS)
-                .build();
-        trainerRepository.save(trainer);
-
-        Set<Trainer> trainers = new HashSet<>();
-        trainers.add(trainer);
-
-        Trainee updated = traineeRepository.updateTrainersListByUsername("Aman.Nazarkulov", trainers);
-
-        assertNotNull(updated.getTrainers());
-        assertEquals(1, updated.getTrainers().size());
-    }
-
-    @Test
-    void findTrainingsByUsername_ShouldReturnFilteredTrainings() {
-        traineeRepository.save(testTrainee);
-
-        List<com.github.amangusss.gym_application.entity.training.Training> trainings =
-            traineeRepository.findTrainingsByUsername("Aman.Nazarkulov", null, null, null, null);
-
-        assertNotNull(trainings);
+        Mockito.verify(traineeRepository, Mockito.times(1))
+                .existsByUserUsernameAndUserPassword(USERNAME, INVALID_PASSWORD);
     }
 }

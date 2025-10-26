@@ -1,25 +1,20 @@
 package com.github.amangusss.gym_application.repository;
 
-import com.github.amangusss.gym_application.entity.TrainingType;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
-import com.github.amangusss.gym_application.entity.trainer.Trainer;
-import com.github.amangusss.gym_application.entity.training.Training;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Set;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
-public interface TraineeRepository {
+import java.util.Optional;
 
-    Trainee save(Trainee trainee);
-    boolean existsByUsernameAndPassword(String username, String password);
-    Trainee findByUsername(String username);
-    Trainee updatePasswordByUsername(String username, String oldPassword, String newPassword);
-    Trainee update(Trainee trainee);
-    Trainee updateActiveStatusByUsername(String username, boolean isActive);
-    void deleteByUsername(String username);
-    List<Training> findTrainingsByUsername(String username, LocalDate fromDate, LocalDate toDate,
-                                           String trainerName, TrainingType trainingType);
-    List<Trainer> findTrainersNotAssignedOnTraineeByUsername(String username);
-    Trainee updateTrainersListByUsername(String username, Set<Trainer> trainers);
+@Repository
+public interface TraineeRepository extends JpaRepository<Trainee, Long> {
+
+    @Query("SELECT t FROM Trainee t LEFT JOIN FETCH t.user WHERE t.user.username = :username")
+    Optional<Trainee> findByUserUsername(@Param("username") String username);
+
+    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM Trainee t WHERE t.user.username = :username AND t.user.password = :password")
+    boolean existsByUserUsernameAndUserPassword(@Param("username") String username, @Param("password") String password);
 }

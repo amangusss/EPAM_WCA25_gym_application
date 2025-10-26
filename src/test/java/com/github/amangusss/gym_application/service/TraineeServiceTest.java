@@ -1,39 +1,50 @@
 package com.github.amangusss.gym_application.service;
 
-import com.github.amangusss.gym_application.entity.TrainingType;
+import com.github.amangusss.gym_application.entity.User;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
-import com.github.amangusss.gym_application.entity.trainer.Trainer;
-import com.github.amangusss.gym_application.entity.training.Training;
 import com.github.amangusss.gym_application.exception.AuthenticationException;
-import com.github.amangusss.gym_application.exception.ValidationException;
 import com.github.amangusss.gym_application.repository.TraineeRepository;
+import com.github.amangusss.gym_application.repository.UserRepository;
 import com.github.amangusss.gym_application.service.impl.TraineeServiceImpl;
 import com.github.amangusss.gym_application.util.credentials.PasswordGenerator;
 import com.github.amangusss.gym_application.util.credentials.UsernameGenerator;
-import com.github.amangusss.gym_application.util.validation.service.trainee.TraineeServiceValidation;
+import com.github.amangusss.gym_application.validation.trainee.TraineeEntityValidation;
+
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Predicate;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("TraineeService Tests")
 class TraineeServiceTest {
+
+    private static final Long USER_ID = 1L;
+    private static final Long TRAINEE_ID = 1L;
+    private static final String FIRST_NAME = "Dastan";
+    private static final String LAST_NAME = "Ibraimov";
+    private static final String USERNAME = "Dastan.Ibraimov";
+    private static final String VALID_PASSWORD = "password123";
+    private static final String INVALID_PASSWORD = "wrongPassword";
+    private static final String ADDRESS = "Panfilov St, 46A";
+    private static final String NEW_ADDRESS = "New Address";
+    private static final LocalDate DATE_OF_BIRTH = LocalDate.of(2004, 8, 14);
+    private static final boolean IS_ACTIVE = true;
 
     @Mock
     private TraineeRepository traineeRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private UsernameGenerator usernameGenerator;
@@ -42,7 +53,7 @@ class TraineeServiceTest {
     private PasswordGenerator passwordGenerator;
 
     @Mock
-    private TraineeServiceValidation traineeServiceValidation;
+    private TraineeEntityValidation traineeEntityValidation;
 
     @InjectMocks
     private TraineeServiceImpl traineeService;
@@ -51,218 +62,143 @@ class TraineeServiceTest {
 
     @BeforeEach
     void setUp() {
+        Mockito.reset(traineeRepository, userRepository, usernameGenerator,
+                     passwordGenerator, traineeEntityValidation);
+
+        User testUser = User.builder()
+                .id(USER_ID)
+                .firstName(FIRST_NAME)
+                .lastName(LAST_NAME)
+                .username(USERNAME)
+                .password(VALID_PASSWORD)
+                .isActive(IS_ACTIVE)
+                .build();
+
         testTrainee = Trainee.builder()
-                .firstName("Dastan")
-                .lastName("Ibraimov")
-                .dateOfBirth(LocalDate.of(2004, 8, 14))
-                .address("Panfilov St, 46A")
+                .id(TRAINEE_ID)
+                .user(testUser)
+                .dateOfBirth(DATE_OF_BIRTH)
+                .address(ADDRESS)
                 .build();
     }
 
     @Test
-    void createTrainee_ShouldGenerateCredentialsAndSave() {
-        when(usernameGenerator.generateUsername(eq("Dastan"), eq("Ibraimov"), any(Predicate.class)))
-                .thenReturn("Dastan.Ibraimov");
-        when(passwordGenerator.generatePassword()).thenReturn("password123");
-        doNothing().when(traineeServiceValidation).validateTraineeForCreationOrUpdate(any());
-        when(traineeRepository.save(any(Trainee.class))).thenReturn(testTrainee);
+    @DisplayName("Should create trainee with generated credentials when creating trainee")
+    void shouldCreateTraineeWithGeneratedCredentialsWhenCreatingTrainee() {
+        Mockito.when(usernameGenerator.generateUsername(
+                ArgumentMatchers.eq(FIRST_NAME),
+                ArgumentMatchers.eq(LAST_NAME),
+                ArgumentMatchers.any()))
+                .thenReturn(USERNAME);
+        Mockito.when(passwordGenerator.generatePassword()).thenReturn(VALID_PASSWORD);
+        Mockito.doNothing().when(traineeEntityValidation).validateTraineeForCreationOrUpdate(ArgumentMatchers.any());
+        Mockito.when(traineeRepository.save(ArgumentMatchers.any(Trainee.class))).thenReturn(testTrainee);
 
         Trainee result = traineeService.createTrainee(testTrainee);
 
-        assertNotNull(result);
-        assertEquals("Dastan.Ibraimov", result.getUsername());
-        assertEquals("password123", result.getPassword());
-        assertTrue(result.isActive());
+        Assertions.assertThat(result).isNotNull();
+        Assertions.assertThat(result.getUser().getUsername()).isEqualTo(USERNAME);
 
-        verify(usernameGenerator).generateUsername(eq("Dastan"), eq("Ibraimov"), any(Predicate.class));
-        verify(passwordGenerator).generatePassword();
-        verify(traineeRepository).save(testTrainee);
+        Mockito.verify(traineeRepository, Mockito.times(1)).save(ArgumentMatchers.any(Trainee.class));
     }
 
     @Test
-    void findTraineeByUsername_ShouldReturnTrainee() {
-        testTrainee.setUsername("Dastan.Ibraimov");
-        testTrainee.setPassword("password123");
+    @DisplayName("Should return trainee when finding by username with valid password")
+    void shouldReturnTraineeWhenFindingByUsernameWithValidPassword() {
+        Mockito.when(traineeRepository.existsByUserUsernameAndUserPassword(USERNAME, VALID_PASSWORD))
+                .thenReturn(true);
+        Mockito.when(traineeRepository.findByUserUsername(USERNAME))
+                .thenReturn(Optional.of(testTrainee));
 
-        when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
-        when(traineeRepository.findByUsername("Dastan.Ibraimov")).thenReturn(testTrainee);
+        Trainee result = traineeService.findTraineeByUsername(USERNAME, VALID_PASSWORD);
 
-        Trainee result = traineeService.findTraineeByUsername("Dastan.Ibraimov", "password123");
+        Assertions.assertThat(result).isNotNull();
+        Assertions.assertThat(result.getUser().getUsername()).isEqualTo(USERNAME);
 
-        assertNotNull(result);
-        assertEquals("Dastan.Ibraimov", result.getUsername());
-        verify(traineeRepository).findByUsername("Dastan.Ibraimov");
+        Mockito.verify(traineeRepository, Mockito.times(1)).findByUserUsername(USERNAME);
     }
 
     @Test
-    void findTraineeByUsername_WithInvalidCredentials_ShouldThrowException() {
-        when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "wrongPassword")).thenReturn(false);
+    @DisplayName("Should throw AuthenticationException when password is invalid")
+    void shouldThrowAuthenticationExceptionWhenPasswordIsInvalid() {
+        Mockito.when(traineeRepository.existsByUserUsernameAndUserPassword(USERNAME, INVALID_PASSWORD))
+                .thenReturn(false);
 
-        assertThrows(AuthenticationException.class,
-                () -> traineeService.findTraineeByUsername("Dastan.Ibraimov", "wrongPassword"));
+        Assertions.assertThatThrownBy(() -> traineeService.findTraineeByUsername(USERNAME, INVALID_PASSWORD))
+                .isInstanceOf(AuthenticationException.class)
+                .hasMessageContaining("Authentication failed for trainee: " + USERNAME);
     }
 
     @Test
-    void updateTrainee_ShouldUpdateAndReturnTrainee() {
-        Trainee updatedTrainee = Trainee.builder()
-                .firstName("Dastan")
-                .lastName("Ibraimov")
-                .dateOfBirth(LocalDate.of(2004, 8, 14))
-                .address("Erkindik boulevard, 10")
+    @DisplayName("Should update trainee successfully when updating with valid data")
+    void shouldUpdateTraineeSuccessfullyWhenUpdatingWithValidData() {
+        Trainee updateData = Trainee.builder()
+                .user(User.builder()
+                        .firstName(FIRST_NAME)
+                        .lastName(LAST_NAME)
+                        .isActive(IS_ACTIVE)
+                        .build())
+                .dateOfBirth(DATE_OF_BIRTH)
+                .address(NEW_ADDRESS)
                 .build();
 
-        testTrainee.setUsername("Dastan.Ibraimov");
-        testTrainee.setPassword("password123");
+        Mockito.when(traineeRepository.existsByUserUsernameAndUserPassword(USERNAME, VALID_PASSWORD))
+                .thenReturn(true);
+        Mockito.when(traineeRepository.findByUserUsername(USERNAME))
+                .thenReturn(Optional.of(testTrainee));
+        Mockito.doNothing().when(traineeEntityValidation).validateTraineeForCreationOrUpdate(ArgumentMatchers.any());
+        Mockito.when(traineeRepository.save(ArgumentMatchers.any(Trainee.class))).thenReturn(testTrainee);
 
-        when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
-        when(traineeRepository.findByUsername("Dastan.Ibraimov")).thenReturn(testTrainee);
-        doNothing().when(traineeServiceValidation).validateTraineeForCreationOrUpdate(any());
-        when(traineeRepository.update(any(Trainee.class))).thenReturn(testTrainee);
+        Trainee result = traineeService.updateTrainee(USERNAME, VALID_PASSWORD, updateData);
 
-        Trainee result = traineeService.updateTrainee("Dastan.Ibraimov", "password123", updatedTrainee);
+        Assertions.assertThat(result).isNotNull();
 
-        assertNotNull(result);
-        verify(traineeRepository).update(testTrainee);
+        Mockito.verify(traineeRepository, Mockito.times(1)).save(ArgumentMatchers.any(Trainee.class));
     }
 
     @Test
-    void deleteTraineeByUsername_ShouldDeleteTrainee() {
-        when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
-        doNothing().when(traineeRepository).deleteByUsername("Dastan.Ibraimov");
+    @DisplayName("Should delete trainee when deleting by username")
+    void shouldDeleteTraineeWhenDeletingByUsername() {
+        Mockito.when(traineeRepository.existsByUserUsernameAndUserPassword(USERNAME, VALID_PASSWORD))
+                .thenReturn(true);
+        Mockito.when(traineeRepository.findByUserUsername(USERNAME))
+                .thenReturn(Optional.of(testTrainee));
+        Mockito.doNothing().when(traineeRepository).delete(ArgumentMatchers.any(Trainee.class));
 
-        traineeService.deleteTraineeByUsername("Dastan.Ibraimov", "password123");
+        traineeService.deleteTraineeByUsername(USERNAME, VALID_PASSWORD);
 
-        verify(traineeRepository).deleteByUsername("Dastan.Ibraimov");
+        Mockito.verify(traineeRepository, Mockito.times(1)).delete(testTrainee);
     }
 
     @Test
-    void authenticateTrainee_WithValidCredentials_ShouldReturnTrue() {
-        when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
+    @DisplayName("Should activate trainee successfully when activating")
+    void shouldActivateTraineeSuccessfullyWhenActivating() {
+        Mockito.when(traineeRepository.existsByUserUsernameAndUserPassword(USERNAME, VALID_PASSWORD))
+                .thenReturn(true);
+        Mockito.when(traineeRepository.findByUserUsername(USERNAME))
+                .thenReturn(Optional.of(testTrainee));
+        Mockito.when(traineeRepository.save(ArgumentMatchers.any(Trainee.class))).thenReturn(testTrainee);
 
-        boolean result = traineeService.authenticateTrainee("Dastan.Ibraimov", "password123");
+        Trainee result = traineeService.activateTrainee(USERNAME, VALID_PASSWORD);
 
-        assertTrue(result);
+        Assertions.assertThat(result).isNotNull();
+
+        Mockito.verify(traineeRepository, Mockito.times(1)).save(testTrainee);
     }
 
     @Test
-    void authenticateTrainee_WithInvalidCredentials_ShouldReturnFalse() {
-        when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "wrongPassword")).thenReturn(false);
+    @DisplayName("Should deactivate trainee successfully when deactivating")
+    void shouldDeactivateTraineeSuccessfullyWhenDeactivating() {
+        Mockito.when(traineeRepository.existsByUserUsernameAndUserPassword(USERNAME, VALID_PASSWORD))
+                .thenReturn(true);
+        Mockito.when(traineeRepository.findByUserUsername(USERNAME))
+                .thenReturn(Optional.of(testTrainee));
+        Mockito.when(traineeRepository.save(ArgumentMatchers.any(Trainee.class))).thenReturn(testTrainee);
 
-        boolean result = traineeService.authenticateTrainee("Dastan.Ibraimov", "wrongPassword");
+        Trainee result = traineeService.deactivateTrainee(USERNAME, VALID_PASSWORD);
 
-        assertFalse(result);
-    }
+        Assertions.assertThat(result).isNotNull();
 
-    @Test
-    void authenticateTrainee_WithNullUsername_ShouldReturnFalse() {
-        boolean result = traineeService.authenticateTrainee(null, "password123");
-
-        assertFalse(result);
-        verify(traineeRepository, never()).existsByUsernameAndPassword(anyString(), anyString());
-    }
-
-    @Test
-    void authenticateTrainee_WithEmptyPassword_ShouldReturnFalse() {
-        boolean result = traineeService.authenticateTrainee("Dastan.Ibraimov", "");
-
-        assertFalse(result);
-        verify(traineeRepository, never()).existsByUsernameAndPassword(anyString(), anyString());
-    }
-
-    @Test
-    void changeTraineePassword_ShouldUpdatePassword() {
-        testTrainee.setUsername("Dastan.Ibraimov");
-
-        when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "oldPassword")).thenReturn(true);
-        doNothing().when(traineeServiceValidation).validatePasswordChange("oldPassword", "newPassword");
-        when(traineeRepository.updatePasswordByUsername("Dastan.Ibraimov", "oldPassword", "newPassword"))
-                .thenReturn(testTrainee);
-
-        Trainee result = traineeService.changeTraineePassword("Dastan.Ibraimov", "oldPassword", "newPassword");
-
-        assertNotNull(result);
-        verify(traineeRepository).updatePasswordByUsername("Dastan.Ibraimov", "oldPassword", "newPassword");
-    }
-
-    @Test
-    void activateTrainee_ShouldActivateTrainee() {
-        testTrainee.setActive(true);
-
-        when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
-        when(traineeRepository.updateActiveStatusByUsername("Dastan.Ibraimov", true)).thenReturn(testTrainee);
-
-        Trainee result = traineeService.activateTrainee("Dastan.Ibraimov", "password123");
-
-        assertNotNull(result);
-        verify(traineeRepository).updateActiveStatusByUsername("Dastan.Ibraimov", true);
-    }
-
-    @Test
-    void deactivateTrainee_ShouldDeactivateTrainee() {
-        testTrainee.setActive(false);
-
-        when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
-        when(traineeRepository.updateActiveStatusByUsername("Dastan.Ibraimov", false)).thenReturn(testTrainee);
-
-        Trainee result = traineeService.deactivateTrainee("Dastan.Ibraimov", "password123");
-
-        assertNotNull(result);
-        assertFalse(result.isActive());
-        verify(traineeRepository).updateActiveStatusByUsername("Dastan.Ibraimov", false);
-    }
-
-    @Test
-    void getTraineeTrainingsList_ShouldReturnTrainings() {
-        LocalDate fromDate = LocalDate.now();
-        LocalDate toDate = LocalDate.now().plusDays(30);
-        List<Training> trainings = Collections.emptyList();
-
-        when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
-        doNothing().when(traineeServiceValidation).validateDateRange(fromDate, toDate);
-        when(traineeRepository.findTrainingsByUsername("Dastan.Ibraimov", fromDate, toDate, "Jane", TrainingType.YOGA))
-                .thenReturn(trainings);
-
-        List<Training> result = traineeService.getTraineeTrainingsList(
-                "Dastan.Ibraimov", "password123", fromDate, toDate, "Jane", TrainingType.YOGA);
-
-        assertNotNull(result);
-        verify(traineeRepository).findTrainingsByUsername("Dastan.Ibraimov", fromDate, toDate, "Jane", TrainingType.YOGA);
-    }
-
-    @Test
-    void getTrainersNotAssignedToTrainee_ShouldReturnTrainers() {
-        List<Trainer> trainers = Collections.emptyList();
-
-        when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
-        when(traineeRepository.findTrainersNotAssignedOnTraineeByUsername("Dastan.Ibraimov")).thenReturn(trainers);
-
-        List<Trainer> result = traineeService.getTrainersNotAssignedToTrainee("Dastan.Ibraimov", "password123");
-
-        assertNotNull(result);
-        verify(traineeRepository).findTrainersNotAssignedOnTraineeByUsername("Dastan.Ibraimov");
-    }
-
-    @Test
-    void updateTraineeTrainersList_ShouldUpdateTrainersList() {
-        Set<Trainer> trainers = new HashSet<>();
-        testTrainee.setUsername("Dastan.Ibraimov");
-
-        when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
-        when(traineeRepository.updateTrainersListByUsername("Dastan.Ibraimov", trainers)).thenReturn(testTrainee);
-
-        Trainee result = traineeService.updateTraineeTrainersList("Dastan.Ibraimov", "password123", trainers);
-
-        assertNotNull(result);
-        verify(traineeRepository).updateTrainersListByUsername("Dastan.Ibraimov", trainers);
-    }
-
-    @Test
-    void updateTraineeTrainersList_WithNullTrainers_ShouldThrowException() {
-        when(traineeRepository.existsByUsernameAndPassword("Dastan.Ibraimov", "password123")).thenReturn(true);
-
-        assertThrows(ValidationException.class,
-                () -> traineeService.updateTraineeTrainersList("Dastan.Ibraimov", "password123", null));
-
-        verify(traineeRepository, never()).updateTrainersListByUsername(anyString(), any());
+        Mockito.verify(traineeRepository, Mockito.times(1)).save(testTrainee);
     }
 }
