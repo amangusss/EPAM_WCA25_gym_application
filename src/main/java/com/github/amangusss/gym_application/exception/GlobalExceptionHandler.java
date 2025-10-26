@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.UUID;
 
+//TODO переделать на норм обработку ошибок
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -85,14 +86,5 @@ public class GlobalExceptionHandler {
 
         ErrorResponse error = new ErrorResponse("Bad Request", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericError(Exception ex) {
-        String transactionId = UUID.randomUUID().toString();
-        log.error("[Transaction: {}] Unexpected error: {}", transactionId, ex.getMessage(), ex);
-
-        ErrorResponse error = new ErrorResponse("Internal Server Error", "Something went wrong. Please try again later.");
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

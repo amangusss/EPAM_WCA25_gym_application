@@ -2,6 +2,8 @@ package com.github.amangusss.gym_application.service.impl;
 
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.training.Training;
+import com.github.amangusss.gym_application.exception.AuthenticationException;
+import com.github.amangusss.gym_application.exception.TrainerNotFoundException;
 import com.github.amangusss.gym_application.repository.TrainerRepository;
 import com.github.amangusss.gym_application.repository.UserRepository;
 import com.github.amangusss.gym_application.service.TrainerService;
@@ -52,7 +54,7 @@ public class TrainerServiceImpl implements TrainerService {
         authenticationCheck(username, password);
 
         Trainer trainer = trainerRepository.findByUserUsername(username)
-                .orElseThrow(() -> new RuntimeException("Trainer not found with username: " + username));
+                .orElseThrow(() -> new TrainerNotFoundException("Trainer not found with username: " + username));
         logger.info("Found trainer with username: {}", username);
         return trainer;
     }
@@ -97,7 +99,7 @@ public class TrainerServiceImpl implements TrainerService {
         trainerEntityValidation.validatePasswordChange(oldPassword, newPassword);
 
         Trainer trainer = trainerRepository.findByUserUsername(username)
-                .orElseThrow(() -> new RuntimeException("Trainer not found with username: " + username));
+                .orElseThrow(() -> new TrainerNotFoundException("Trainer not found with username: " + username));
         trainer.getUser().setPassword(newPassword);
         Trainer updatedTrainer = trainerRepository.save(trainer);
         logger.info("Successfully changed password for trainer: {}", username);
@@ -110,7 +112,7 @@ public class TrainerServiceImpl implements TrainerService {
         authenticationCheck(username, password);
 
         Trainer trainer = trainerRepository.findByUserUsername(username)
-                .orElseThrow(() -> new RuntimeException("Trainer not found with username: " + username));
+                .orElseThrow(() -> new TrainerNotFoundException("Trainer not found with username: " + username));
         trainer.getUser().setActive(true);
         Trainer updatedTrainer = trainerRepository.save(trainer);
         logger.info("Successfully activated trainer: {}", username);
@@ -123,7 +125,7 @@ public class TrainerServiceImpl implements TrainerService {
         authenticationCheck(username, password);
 
         Trainer trainer = trainerRepository.findByUserUsername(username)
-                .orElseThrow(() -> new RuntimeException("Trainer not found with username: " + username));
+                .orElseThrow(() -> new TrainerNotFoundException("Trainer not found with username: " + username));
         trainer.getUser().setActive(false);
         Trainer updatedTrainer = trainerRepository.save(trainer);
         logger.info("Successfully deactivated trainer: {}", username);
@@ -138,7 +140,7 @@ public class TrainerServiceImpl implements TrainerService {
         trainerEntityValidation.validateDateRange(fromDate, toDate);
 
         Trainer trainer = trainerRepository.findByUserUsername(username)
-                .orElseThrow(() -> new RuntimeException("Trainer not found with username: " + username));
+                .orElseThrow(() -> new TrainerNotFoundException("Trainer not found with username: " + username));
         
         List<Training> trainings = trainer.getTrainings().stream()
                 .filter(training -> {
@@ -172,7 +174,7 @@ public class TrainerServiceImpl implements TrainerService {
 
     private void authenticationCheck(String username, String password) {
         if (!trainerRepository.existsByUserUsernameAndUserPassword(username, password)) {
-            throw new RuntimeException("Authentication failed for trainer: " + username);
+            throw new AuthenticationException("Authentication failed for trainer: " + username);
         }
     }
 }

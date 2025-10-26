@@ -1,30 +1,62 @@
 package com.github.amangusss.gym_application.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.amangusss.gym_application.dto.trainee.TraineeDTO;
 import com.github.amangusss.gym_application.dto.trainer.TrainerDTO;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
 import com.github.amangusss.gym_application.facade.TraineeFacade;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TraineeController.class)
 @DisplayName("TraineeController Tests")
 class TraineeControllerTest {
+
+    private static final String TRAINEE_FIRST_NAME = "Dastan";
+    private static final String TRAINEE_LAST_NAME = "Ibraimov";
+    private static final String TRAINEE_USERNAME = "Dastan.Ibraimov";
+    private static final String VALID_PASSWORD = "password123";
+    private static final LocalDate BIRTH_DATE = LocalDate.of(2004, 8, 14);
+    private static final String ADDRESS = "Panfilov St, 46A";
+    private static final String NEW_ADDRESS = "New Address";
+    private static final String TRAINER_USERNAME = "Aman.Nazarkulov";
+    private static final String TRAINER_NAME = "Aman";
+    private static final String TRAINING_TYPE = "YOGA";
+    private static final LocalDate PERIOD_FROM = LocalDate.parse("2025-01-01");
+    private static final LocalDate PERIOD_TO = LocalDate.parse("2025-12-31");
+
+    private static final String REGISTER_ENDPOINT = "/api/trainees/register";
+    private static final String TRAINEE_BY_USERNAME_ENDPOINT = "/api/trainees/{username}";
+    private static final String ACTIVATE_ENDPOINT = "/api/trainees/{username}/activate";
+    private static final String TRAININGS_ENDPOINT = "/api/trainees/{username}/trainings";
+    private static final String UNASSIGNED_TRAINERS_ENDPOINT = "/api/trainees/{username}/trainers/unassigned";
+    private static final String UPDATE_TRAINERS_ENDPOINT = "/api/trainees/{username}/trainers";
 
     @Autowired
     private MockMvc mockMvc;
@@ -32,157 +64,182 @@ class TraineeControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private TraineeFacade traineeFacade;
 
+    @BeforeEach
+    void setUp() {
+        reset(traineeFacade);
+    }
+
     @Test
-    @DisplayName("Should register trainee successfully")
-    void registerTrainee_ShouldReturnRegisteredResponse() throws Exception {
-        TraineeDTO.Request.Register request = new TraineeDTO.Request.Register(
-                "Dastan", "Ibraimov", LocalDate.of(2004, 8, 14), "Panfilov St, 46A"
-        );
+    @DisplayName("Should return 200 OK and registered response when trainee registers successfully")
+    void shouldReturnOkAndRegisteredResponseWhenTraineeRegistersSuccessfully() throws Exception {
+        TraineeDTO.Request.Register registerRequest = createRegisterRequest();
+        TraineeDTO.Response.Registered expectedResponse = createRegisteredResponse();
+        when(traineeFacade.registerTrainee(any(TraineeDTO.Request.Register.class))).thenReturn(expectedResponse);
 
-        TraineeDTO.Response.Registered response = new TraineeDTO.Response.Registered(
-                "Dastan.Ibraimov", "password123"
-        );
-
-        when(traineeFacade.registerTrainee(any())).thenReturn(response);
-
-        mockMvc.perform(post("/api/trainees/register")
+        mockMvc.perform(post(REGISTER_ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("Dastan.Ibraimov"))
-                .andExpect(jsonPath("$.password").value("password123"));
+                .andExpect(jsonPath("$.username").value(TRAINEE_USERNAME))
+                .andExpect(jsonPath("$.password").value(VALID_PASSWORD));
 
-        verify(traineeFacade).registerTrainee(any());
+        verify(traineeFacade, times(1)).registerTrainee(any(TraineeDTO.Request.Register.class));
     }
 
     @Test
-    @DisplayName("Should get trainee profile successfully")
-    void getTraineeProfile_ShouldReturnProfile() throws Exception {
-        TraineeDTO.Response.Profile response = new TraineeDTO.Response.Profile(
-                "Dastan", "Ibraimov", LocalDate.of(2004, 8, 14),
-                "Panfilov St, 46A", true, Collections.emptyList()
-        );
+    @DisplayName("Should return 200 OK and profile when getting trainee profile")
+    void shouldReturnOkAndProfileWhenGettingTraineeProfile() throws Exception {
+        TraineeDTO.Response.Profile expectedProfile = createTraineeProfile();
+        when(traineeFacade.getTraineeProfile(TRAINEE_USERNAME, VALID_PASSWORD)).thenReturn(expectedProfile);
 
-        when(traineeFacade.getTraineeProfile(anyString(), anyString())).thenReturn(response);
-
-        mockMvc.perform(get("/api/trainees/{username}", "Dastan.Ibraimov")
-                        .param("password", "password123"))
+        mockMvc.perform(get(TRAINEE_BY_USERNAME_ENDPOINT, TRAINEE_USERNAME)
+                        .param("password", VALID_PASSWORD))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.firstName").value("Dastan"))
-                .andExpect(jsonPath("$.lastName").value("Ibraimov"));
+                .andExpect(jsonPath("$.firstName").value(TRAINEE_FIRST_NAME))
+                .andExpect(jsonPath("$.lastName").value(TRAINEE_LAST_NAME))
+                .andExpect(jsonPath("$.dateOfBirth").value(BIRTH_DATE.toString()))
+                .andExpect(jsonPath("$.address").value(ADDRESS));
 
-        verify(traineeFacade).getTraineeProfile("Dastan.Ibraimov", "password123");
+        verify(traineeFacade, times(1)).getTraineeProfile(TRAINEE_USERNAME, VALID_PASSWORD);
     }
 
     @Test
-    @DisplayName("Should update trainee successfully")
-    void updateTrainee_ShouldReturnUpdatedResponse() throws Exception {
-        TraineeDTO.Request.Update request = new TraineeDTO.Request.Update(
-                "Dastan", "Ibraimov",
-                LocalDate.of(2004, 8, 14), "New Address", true
-        );
+    @DisplayName("Should return 200 OK and updated response when trainee updates successfully")
+    void shouldReturnOkAndUpdatedResponseWhenTraineeUpdatesSuccessfully() throws Exception {
+        TraineeDTO.Request.Update updateRequest = createUpdateRequest();
+        TraineeDTO.Response.Updated expectedResponse = createUpdatedResponse();
+        when(traineeFacade.updateTrainee(any(TraineeDTO.Request.Update.class), any(), eq(VALID_PASSWORD)))
+                .thenReturn(expectedResponse);
 
-        TraineeDTO.Response.Updated response = new TraineeDTO.Response.Updated(
-                "Dastan.Ibraimov", "Dastan", "Ibraimov",
-                LocalDate.of(2004, 8, 14), "New Address", true, Collections.emptyList()
-        );
-
-        when(traineeFacade.updateTrainee(request, any(), anyString())).thenReturn(response);
-
-        mockMvc.perform(put("/api/trainees")
-                        .param("password", "password123")
+        mockMvc.perform(put(TRAINEE_BY_USERNAME_ENDPOINT, TRAINEE_USERNAME)
+                        .param("password", VALID_PASSWORD)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("Dastan.Ibraimov"));
+                .andExpect(jsonPath("$.username").value(TRAINEE_USERNAME))
+                .andExpect(jsonPath("$.address").value(NEW_ADDRESS));
 
-        verify(traineeFacade).updateTrainee(request, any(), eq("password123"));
+        verify(traineeFacade, times(1)).updateTrainee(any(TraineeDTO.Request.Update.class), any(), eq(VALID_PASSWORD));
     }
 
     @Test
-    @DisplayName("Should delete trainee successfully")
-    void deleteTrainee_ShouldReturnOk() throws Exception {
-        doNothing().when(traineeFacade).deleteTrainee(anyString(), anyString());
+    @DisplayName("Should return 200 OK when deleting trainee successfully")
+    void shouldReturnOkWhenDeletingTraineeSuccessfully() throws Exception {
+        doNothing().when(traineeFacade).deleteTrainee(TRAINEE_USERNAME, VALID_PASSWORD);
 
-        mockMvc.perform(delete("/api/trainees/{username}", "Dastan.Ibraimov")
-                        .param("password", "password123"))
+        mockMvc.perform(delete(TRAINEE_BY_USERNAME_ENDPOINT, TRAINEE_USERNAME)
+                        .param("password", VALID_PASSWORD))
                 .andExpect(status().isOk());
 
-        verify(traineeFacade).deleteTrainee("Dastan.Ibraimov", "password123");
+        verify(traineeFacade, times(1)).deleteTrainee(TRAINEE_USERNAME, VALID_PASSWORD);
     }
 
     @Test
-    @DisplayName("Should update trainee status successfully")
-    void updateTraineeStatus_ShouldReturnOk() throws Exception {
-        TraineeDTO.Request.UpdateStatus request = new TraineeDTO.Request.UpdateStatus(anyString(), false);
-        doNothing().when(traineeFacade).updateTraineeStatus(anyString(), anyBoolean(), anyString());
+    @DisplayName("Should return 200 OK when updating trainee status successfully")
+    void shouldReturnOkWhenUpdatingTraineeStatusSuccessfully() throws Exception {
+        boolean newStatus = false;
+        TraineeDTO.Request.UpdateStatus statusRequest = new TraineeDTO.Request.UpdateStatus(TRAINEE_USERNAME, newStatus);
+        doNothing().when(traineeFacade).updateTraineeStatus(TRAINEE_USERNAME, newStatus, VALID_PASSWORD);
 
-        mockMvc.perform(patch("/api/trainees/{username}/activate", "Dastan.Ibraimov")
-                        .param("password", "password123")
+        mockMvc.perform(patch(ACTIVATE_ENDPOINT, TRAINEE_USERNAME)
+                        .param("password", VALID_PASSWORD)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(statusRequest)))
                 .andExpect(status().isOk());
 
-        verify(traineeFacade).updateTraineeStatus("Dastan.Ibraimov", false, "password123");
+        verify(traineeFacade, times(1)).updateTraineeStatus(TRAINEE_USERNAME, newStatus, VALID_PASSWORD);
     }
 
     @Test
-    @DisplayName("Should get trainee trainings list successfully")
-    void getTraineeTrainings_ShouldReturnTrainingsList() throws Exception {
-        List<TrainingDTO.Response.TraineeTraining> trainings = Collections.emptyList();
-        when(traineeFacade.getTraineeTrainings(anyString(), anyString(), any(), any(), anyString(), anyString()))
-                .thenReturn(trainings);
+    @DisplayName("Should return 200 OK and trainings list when getting trainee trainings")
+    void shouldReturnOkAndTrainingsListWhenGettingTraineeTrainings() throws Exception {
+        List<TrainingDTO.Response.TraineeTraining> expectedTrainings = Collections.emptyList();
+        when(traineeFacade.getTraineeTrainings(
+                TRAINEE_USERNAME, VALID_PASSWORD, PERIOD_FROM, PERIOD_TO, TRAINER_NAME, TRAINING_TYPE))
+                .thenReturn(expectedTrainings);
 
-        mockMvc.perform(get("/api/trainees/{username}/trainings", "Dastan.Ibraimov")
-                        .param("password", "password123")
-                        .param("periodFrom", "2025-01-01")
-                        .param("periodTo", "2025-12-31")
-                        .param("trainerName", "Aman")
-                        .param("trainingType", "YOGA"))
+        mockMvc.perform(get(TRAININGS_ENDPOINT, TRAINEE_USERNAME)
+                        .param("password", VALID_PASSWORD)
+                        .param("periodFrom", PERIOD_FROM.toString())
+                        .param("periodTo", PERIOD_TO.toString())
+                        .param("trainerName", TRAINER_NAME)
+                        .param("trainingType", TRAINING_TYPE))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
 
-        verify(traineeFacade).getTraineeTrainings(
-                eq("Dastan.Ibraimov"), eq("password123"),
-                eq(LocalDate.parse("2025-01-01")), eq(LocalDate.parse("2025-12-31")),
-                eq("Aman"), eq("YOGA"));
+        verify(traineeFacade, times(1)).getTraineeTrainings(
+                TRAINEE_USERNAME, VALID_PASSWORD, PERIOD_FROM, PERIOD_TO, TRAINER_NAME, TRAINING_TYPE);
     }
 
     @Test
-    @DisplayName("Should get unassigned trainers successfully")
-    void getUnassignedTrainers_ShouldReturnTrainersList() throws Exception {
-        List<TrainerDTO.Response.Unassigned> trainers = Collections.emptyList();
-        when(traineeFacade.getUnassignedTrainers(anyString(), anyString())).thenReturn(trainers);
+    @DisplayName("Should return 200 OK and unassigned trainers list when getting unassigned trainers")
+    void shouldReturnOkAndUnassignedTrainersListWhenGettingUnassignedTrainers() throws Exception {
+        List<TrainerDTO.Response.Unassigned> expectedTrainers = Collections.emptyList();
+        when(traineeFacade.getUnassignedTrainers(TRAINEE_USERNAME, VALID_PASSWORD)).thenReturn(expectedTrainers);
 
-        mockMvc.perform(get("/api/trainees/{username}/trainers/unassigned", "Dastan.Ibraimov")
-                        .param("password", "password123"))
+        mockMvc.perform(get(UNASSIGNED_TRAINERS_ENDPOINT, TRAINEE_USERNAME)
+                        .param("password", VALID_PASSWORD))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
 
-        verify(traineeFacade).getUnassignedTrainers("Dastan.Ibraimov", "password123");
+        verify(traineeFacade, times(1)).getUnassignedTrainers(TRAINEE_USERNAME, VALID_PASSWORD);
     }
 
     @Test
-    @DisplayName("Should update trainee trainers list successfully")
-    void updateTraineeTrainers_ShouldReturnTrainersList() throws Exception {
-        TraineeDTO.Request.UpdateTrainers request = new TraineeDTO.Request.UpdateTrainers(
-                "Dastan.Ibraimov",
-                List.of("Aman.Nazarkulov")
-        );
+    @DisplayName("Should return 200 OK and trainers list when updating trainee trainers")
+    void shouldReturnOkAndTrainersListWhenUpdatingTraineeTrainers() throws Exception {
+        TraineeDTO.Request.UpdateTrainers updateTrainersRequest = createUpdateTrainersRequest();
+        List<TrainerDTO.Response.InList> expectedTrainers = Collections.emptyList();
+        when(traineeFacade.updateTraineeTrainers(eq(TRAINEE_USERNAME), any(), eq(VALID_PASSWORD)))
+                .thenReturn(expectedTrainers);
 
-        List<TrainerDTO.Response.InList> response = Collections.emptyList();
-        when(traineeFacade.updateTraineeTrainers(anyString(), any(), anyString())).thenReturn(response);
-
-        mockMvc.perform(put("/api/trainees/{username}/trainers", "Dastan.Ibraimov")
-                        .param("password", "password123")
+        mockMvc.perform(put(UPDATE_TRAINERS_ENDPOINT, TRAINEE_USERNAME)
+                        .param("password", VALID_PASSWORD)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(updateTrainersRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
 
-        verify(traineeFacade).updateTraineeTrainers(eq("Dastan.Ibraimov"), any(), eq("password123"));
+        verify(traineeFacade, times(1)).updateTraineeTrainers(eq(TRAINEE_USERNAME), any(), eq(VALID_PASSWORD));
+    }
+
+    private TraineeDTO.Request.Register createRegisterRequest() {
+        return new TraineeDTO.Request.Register(
+                TRAINEE_FIRST_NAME, TRAINEE_LAST_NAME, BIRTH_DATE, ADDRESS
+        );
+    }
+
+    private TraineeDTO.Response.Registered createRegisteredResponse() {
+        return new TraineeDTO.Response.Registered(TRAINEE_USERNAME, VALID_PASSWORD);
+    }
+
+    private TraineeDTO.Response.Profile createTraineeProfile() {
+        return new TraineeDTO.Response.Profile(
+                TRAINEE_FIRST_NAME, TRAINEE_LAST_NAME, BIRTH_DATE, ADDRESS, true, Collections.emptyList()
+        );
+    }
+
+    private TraineeDTO.Request.Update createUpdateRequest() {
+        return new TraineeDTO.Request.Update(
+                TRAINEE_FIRST_NAME, TRAINEE_LAST_NAME, BIRTH_DATE, NEW_ADDRESS, true
+        );
+    }
+
+    private TraineeDTO.Response.Updated createUpdatedResponse() {
+        return new TraineeDTO.Response.Updated(
+                TRAINEE_USERNAME, TRAINEE_FIRST_NAME, TRAINEE_LAST_NAME,
+                BIRTH_DATE, NEW_ADDRESS, true, Collections.emptyList()
+        );
+    }
+
+    private TraineeDTO.Request.UpdateTrainers createUpdateTrainersRequest() {
+        return new TraineeDTO.Request.UpdateTrainers(
+                TRAINEE_USERNAME, List.of(TRAINER_USERNAME)
+        );
     }
 }
