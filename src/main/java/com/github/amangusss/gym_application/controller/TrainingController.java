@@ -1,7 +1,7 @@
 package com.github.amangusss.gym_application.controller;
 
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
-import com.github.amangusss.gym_application.facade.TrainingFacade;
+import com.github.amangusss.gym_application.service.TrainingService;
 import com.github.amangusss.gym_application.metrics.TrainingMetrics;
 import com.github.amangusss.gym_application.metrics.ApiPerformanceMetrics;
 
@@ -34,7 +34,7 @@ import static io.micrometer.core.instrument.Timer.start;
 @Tag(name = "Training", description = "Training management APIs")
 public class TrainingController {
 
-    private final TrainingFacade trainingFacade;
+    private final TrainingService trainingService;
     private final TrainingMetrics trainingMetrics;
     private final ApiPerformanceMetrics apiPerformanceMetrics;
     private final MeterRegistry meterRegistry;
@@ -50,7 +50,7 @@ public class TrainingController {
         Timer.Sample sample = start(meterRegistry);
 
         try {
-            trainingFacade.addTraining(request);
+            trainingService.addTraining(request);
 
             trainingMetrics.incrementTrainingCreated();
 

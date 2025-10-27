@@ -1,7 +1,7 @@
 package com.github.amangusss.gym_application.controller;
 
 import com.github.amangusss.gym_application.dto.trainingtype.TrainingTypeDTO;
-import com.github.amangusss.gym_application.facade.TrainingTypeFacade;
+import com.github.amangusss.gym_application.service.TrainingTypeService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,7 +24,7 @@ import java.util.UUID;
 @Tag(name = "Training Type", description = "Training type APIs")
 public class TrainingTypeController {
 
-    private final TrainingTypeFacade trainingTypeFacade;
+    private final TrainingTypeService trainingTypeService;
 
     @GetMapping(produces = "application/json")
     @Operation(summary = "Get training types", description = "Retrieves all available training types")
@@ -33,7 +33,7 @@ public class TrainingTypeController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] GET /api/training-types", transactionId);
 
-        List<TrainingTypeDTO.Response.TrainingType> response = trainingTypeFacade.getAllTrainingTypes();
+        List<TrainingTypeDTO.Response.TrainingType> response = trainingTypeService.getAllTrainingTypes();
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);
