@@ -2,7 +2,7 @@ package com.github.amangusss.gym_application.controller;
 
 import com.github.amangusss.gym_application.dto.trainer.TrainerDTO;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
-import com.github.amangusss.gym_application.facade.TrainerFacade;
+import com.github.amangusss.gym_application.service.TrainerService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,11 +59,11 @@ class TrainerControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private TrainerFacade trainerFacade;
+    private TrainerService trainerService;
 
     @BeforeEach
     void setUp() {
-        reset(trainerFacade);
+        reset(trainerService);
     }
 
     @Test
@@ -71,7 +71,7 @@ class TrainerControllerTest {
     void shouldReturnOkAndRegisteredResponseWhenTrainerRegistersSuccessfully() throws Exception {
         TrainerDTO.Request.Register registerRequest = createRegisterRequest();
         TrainerDTO.Response.Registered expectedResponse = createRegisteredResponse();
-        when(trainerFacade.registerTrainer(any(TrainerDTO.Request.Register.class))).thenReturn(expectedResponse);
+        when(trainerService.registerTrainer(any(TrainerDTO.Request.Register.class))).thenReturn(expectedResponse);
 
         mockMvc.perform(post(REGISTER_ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -80,14 +80,14 @@ class TrainerControllerTest {
                 .andExpect(jsonPath("$.username").value(TRAINER_USERNAME))
                 .andExpect(jsonPath("$.password").value(VALID_PASSWORD));
 
-        verify(trainerFacade, times(1)).registerTrainer(any(TrainerDTO.Request.Register.class));
+        verify(trainerService, times(1)).registerTrainer(any(TrainerDTO.Request.Register.class));
     }
 
     @Test
     @DisplayName("Should return 200 OK and profile when getting trainer profile")
     void shouldReturnOkAndProfileWhenGettingTrainerProfile() throws Exception {
         TrainerDTO.Response.Profile expectedProfile = createTrainerProfile();
-        when(trainerFacade.getTrainerProfile(TRAINER_USERNAME, VALID_PASSWORD)).thenReturn(expectedProfile);
+        when(trainerService.getTrainerProfile(TRAINER_USERNAME, VALID_PASSWORD)).thenReturn(expectedProfile);
 
         mockMvc.perform(get(TRAINER_BY_USERNAME_ENDPOINT, TRAINER_USERNAME)
                         .param("password", VALID_PASSWORD))
@@ -96,7 +96,7 @@ class TrainerControllerTest {
                 .andExpect(jsonPath("$.lastName").value(TRAINER_LAST_NAME))
                 .andExpect(jsonPath("$.specializationName").value(SPECIALIZATION_NAME));
 
-        verify(trainerFacade, times(1)).getTrainerProfile(TRAINER_USERNAME, VALID_PASSWORD);
+        verify(trainerService, times(1)).getTrainerProfile(TRAINER_USERNAME, VALID_PASSWORD);
     }
 
     @Test
@@ -104,7 +104,7 @@ class TrainerControllerTest {
     void shouldReturnOkAndUpdatedResponseWhenTrainerUpdatesSuccessfully() throws Exception {
         TrainerDTO.Request.Update updateRequest = createUpdateRequest();
         TrainerDTO.Response.Updated expectedResponse = createUpdatedResponse();
-        when(trainerFacade.updateTrainer(any(TrainerDTO.Request.Update.class), any(), eq(VALID_PASSWORD)))
+        when(trainerService.updateTrainerProfile(any(TrainerDTO.Request.Update.class), any(), eq(VALID_PASSWORD)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(put(TRAINER_BY_USERNAME_ENDPOINT, TRAINER_USERNAME)
@@ -114,7 +114,7 @@ class TrainerControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value(TRAINER_USERNAME));
 
-        verify(trainerFacade, times(1)).updateTrainer(any(TrainerDTO.Request.Update.class), any(), eq(VALID_PASSWORD));
+        verify(trainerService, times(1)).updateTrainerProfile(any(TrainerDTO.Request.Update.class), any(), eq(VALID_PASSWORD));
     }
 
     @Test
@@ -122,7 +122,7 @@ class TrainerControllerTest {
     void shouldReturnOkWhenUpdatingTrainerStatusSuccessfully() throws Exception {
         boolean newStatus = true;
         TrainerDTO.Request.UpdateStatus statusRequest = new TrainerDTO.Request.UpdateStatus(newStatus);
-        doNothing().when(trainerFacade).updateTrainerStatus(TRAINER_USERNAME, newStatus, VALID_PASSWORD);
+        doNothing().when(trainerService).updateTrainerStatus(TRAINER_USERNAME, newStatus, VALID_PASSWORD);
 
         mockMvc.perform(patch(ACTIVATE_ENDPOINT, TRAINER_USERNAME)
                         .param("password", VALID_PASSWORD)
@@ -130,14 +130,14 @@ class TrainerControllerTest {
                         .content(objectMapper.writeValueAsString(statusRequest)))
                 .andExpect(status().isOk());
 
-        verify(trainerFacade, times(1)).updateTrainerStatus(TRAINER_USERNAME, newStatus, VALID_PASSWORD);
+        verify(trainerService, times(1)).updateTrainerStatus(TRAINER_USERNAME, newStatus, VALID_PASSWORD);
     }
 
     @Test
     @DisplayName("Should return 200 OK and trainings list when getting trainer trainings")
     void shouldReturnOkAndTrainingsListWhenGettingTrainerTrainings() throws Exception {
         List<TrainingDTO.Response.TrainerTraining> expectedTrainings = Collections.emptyList();
-        when(trainerFacade.getTrainerTrainings(
+        when(trainerService.getTrainerTrainings(
                 TRAINER_USERNAME, VALID_PASSWORD, PERIOD_FROM, PERIOD_TO, TRAINEE_NAME))
                 .thenReturn(expectedTrainings);
 
@@ -150,7 +150,7 @@ class TrainerControllerTest {
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(0));
 
-        verify(trainerFacade, times(1)).getTrainerTrainings(
+        verify(trainerService, times(1)).getTrainerTrainings(
                 TRAINER_USERNAME, VALID_PASSWORD, PERIOD_FROM, PERIOD_TO, TRAINEE_NAME);
     }
 
