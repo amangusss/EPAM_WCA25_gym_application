@@ -1,0 +1,36 @@
+password:
+  characters: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
+  length: 10
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+    defer-datasource-initialization: true
+
+  h2:
+    console:
+      enabled: false
+
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:data-test.sql
+      continue-on-error: false
+
+logging:
+  level:
+    org.springframework: WARN
+    com.github.amangusss: INFO
+    org.hibernate: WARN
