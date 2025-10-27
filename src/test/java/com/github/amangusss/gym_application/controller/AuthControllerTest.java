@@ -1,7 +1,7 @@
 package com.github.amangusss.gym_application.controller;
 
 import com.github.amangusss.gym_application.dto.auth.AuthDTO;
-import com.github.amangusss.gym_application.facade.AuthFacade;
+import com.github.amangusss.gym_application.service.AuthService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,38 +43,38 @@ class AuthControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private AuthFacade authFacade;
+    private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        reset(authFacade);
+        reset(authService);
     }
 
     @Test
     @DisplayName("Should return 200 OK when login with valid credentials")
     void shouldReturnOkWhenLoginWithValidCredentials() throws Exception {
         AuthDTO.Request.Login expectedLoginRequest = createLoginRequest();
-        when(authFacade.login(expectedLoginRequest)).thenReturn(true);
+        when(authService.login(expectedLoginRequest)).thenReturn(true);
 
         mockMvc.perform(get(LOGIN_ENDPOINT)
                         .param("username", VALID_USERNAME)
                         .param("password", VALID_PASSWORD))
                 .andExpect(status().isOk());
 
-        verify(authFacade, times(1)).login(expectedLoginRequest);
+        verify(authService, times(1)).login(expectedLoginRequest);
     }
 
     @Test
     @DisplayName("Should return 401 Unauthorized when login with invalid credentials")
     void shouldReturnUnauthorizedWhenLoginWithInvalidCredentials() throws Exception {
-        when(authFacade.login(any(AuthDTO.Request.Login.class))).thenReturn(false);
+        when(authService.login(any(AuthDTO.Request.Login.class))).thenReturn(false);
 
         mockMvc.perform(get(LOGIN_ENDPOINT)
                         .param("username", VALID_USERNAME)
                         .param("password", INVALID_PASSWORD))
                 .andExpect(status().isUnauthorized());
 
-        verify(authFacade, times(1)).login(any(AuthDTO.Request.Login.class));
+        verify(authService, times(1)).login(any(AuthDTO.Request.Login.class));
     }
 
     @Test
@@ -82,14 +82,14 @@ class AuthControllerTest {
     void shouldReturnOkWhenPasswordChangedSuccessfully() throws Exception {
         AuthDTO.Request.ChangePassword changePasswordRequest =
                 createChangePasswordRequest(OLD_PASSWORD);
-        when(authFacade.changePassword(any(AuthDTO.Request.ChangePassword.class))).thenReturn(true);
+        when(authService.changePassword(any(AuthDTO.Request.ChangePassword.class))).thenReturn(true);
 
         mockMvc.perform(put(CHANGE_PASSWORD_ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(changePasswordRequest)))
                 .andExpect(status().isOk());
 
-        verify(authFacade, times(1)).changePassword(any(AuthDTO.Request.ChangePassword.class));
+        verify(authService, times(1)).changePassword(any(AuthDTO.Request.ChangePassword.class));
     }
 
     @Test
@@ -97,29 +97,29 @@ class AuthControllerTest {
     void shouldReturnUnauthorizedWhenPasswordChangeFails() throws Exception {
         AuthDTO.Request.ChangePassword changePasswordRequest =
                 createChangePasswordRequest(INVALID_PASSWORD);
-        when(authFacade.changePassword(any(AuthDTO.Request.ChangePassword.class))).thenReturn(false);
+        when(authService.changePassword(any(AuthDTO.Request.ChangePassword.class))).thenReturn(false);
 
         mockMvc.perform(put(CHANGE_PASSWORD_ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(changePasswordRequest)))
                 .andExpect(status().isUnauthorized());
 
-        verify(authFacade, times(1)).changePassword(any(AuthDTO.Request.ChangePassword.class));
+        verify(authService, times(1)).changePassword(any(AuthDTO.Request.ChangePassword.class));
     }
 
     @Test
-    @DisplayName("Should pass correct username and password to facade on login")
-    void shouldPassCorrectCredentialsToFacadeOnLogin() throws Exception {
+    @DisplayName("Should pass correct username and password to service on login")
+    void shouldPassCorrectCredentialsToServiceOnLogin() throws Exception {
         ArgumentCaptor<AuthDTO.Request.Login> loginCaptor =
                 ArgumentCaptor.forClass(AuthDTO.Request.Login.class);
-        when(authFacade.login(any(AuthDTO.Request.Login.class))).thenReturn(true);
+        when(authService.login(any(AuthDTO.Request.Login.class))).thenReturn(true);
 
         mockMvc.perform(get(LOGIN_ENDPOINT)
                         .param("username", VALID_USERNAME)
                         .param("password", VALID_PASSWORD))
                 .andExpect(status().isOk());
 
-        verify(authFacade, times(1)).login(loginCaptor.capture());
+        verify(authService, times(1)).login(loginCaptor.capture());
         AuthDTO.Request.Login capturedLogin = loginCaptor.getValue();
 
         assertEquals(VALID_USERNAME, capturedLogin.username(),

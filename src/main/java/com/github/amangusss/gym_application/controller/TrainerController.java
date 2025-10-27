@@ -2,7 +2,7 @@ package com.github.amangusss.gym_application.controller;
 
 import com.github.amangusss.gym_application.dto.trainer.TrainerDTO;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
-import com.github.amangusss.gym_application.facade.TrainerFacade;
+import com.github.amangusss.gym_application.service.TrainerService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,7 +34,7 @@ import java.util.UUID;
 @Tag(name = "Trainer", description = "Trainer management APIs")
 public class TrainerController {
 
-    private final TrainerFacade trainerFacade;
+    private final TrainerService trainerService;
 
     @PostMapping(value = "/register", consumes = "application/json", produces = "application/json")
     @Operation(summary = "Register new trainer", description = "Creates a new trainer profile and generates username and password")
@@ -44,7 +44,7 @@ public class TrainerController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] POST /api/trainers/register", transactionId);
 
-        TrainerDTO.Response.Registered response = trainerFacade.registerTrainer(request);
+        TrainerDTO.Response.Registered response = trainerService.registerTrainer(request);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);
@@ -59,7 +59,7 @@ public class TrainerController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] GET /api/trainers/{}", transactionId, username);
 
-        TrainerDTO.Response.Profile response = trainerFacade.getTrainerProfile(username, password);
+        TrainerDTO.Response.Profile response = trainerService.getTrainerProfile(username, password);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);
@@ -75,7 +75,7 @@ public class TrainerController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] PUT /api/trainers/{}", transactionId, username);
 
-        TrainerDTO.Response.Updated response = trainerFacade.updateTrainer(request, username, password);
+        TrainerDTO.Response.Updated response = trainerService.updateTrainerProfile(request, username, password);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);
@@ -91,7 +91,7 @@ public class TrainerController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] PATCH /api/trainers/{}/activate", transactionId, username);
 
-        trainerFacade.updateTrainerStatus(username, request.isActive(), password);
+        trainerService.updateTrainerStatus(username, request.isActive(), password);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok().build();
@@ -107,7 +107,7 @@ public class TrainerController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] GET /api/trainers/{}/trainings", transactionId, username);
 
-        List<TrainingDTO.Response.TrainerTraining> response = trainerFacade.getTrainerTrainings(
+        List<TrainingDTO.Response.TrainerTraining> response = trainerService.getTrainerTrainings(
                 username, password, filter.periodFrom(), filter.periodTo(), filter.traineeName());
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);

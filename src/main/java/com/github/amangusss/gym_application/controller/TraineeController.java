@@ -3,8 +3,7 @@ package com.github.amangusss.gym_application.controller;
 import com.github.amangusss.gym_application.dto.trainee.TraineeDTO;
 import com.github.amangusss.gym_application.dto.trainer.TrainerDTO;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
-import com.github.amangusss.gym_application.facade.TraineeFacade;
-
+import com.github.amangusss.gym_application.service.TraineeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,7 +35,7 @@ import java.util.UUID;
 @Tag(name = "Trainee", description = "Trainee management APIs")
 public class TraineeController {
 
-    private final TraineeFacade traineeFacade;
+    private final TraineeService traineeService;
 
     @PostMapping("/register")
     @Operation(summary = "Register new trainee", description = "Creates a new trainee profile and generates username and password")
@@ -46,7 +45,7 @@ public class TraineeController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] POST /api/trainees/register", transactionId);
 
-        TraineeDTO.Response.Registered response = traineeFacade.registerTrainee(request);
+        TraineeDTO.Response.Registered response = traineeService.createTrainee(request);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);
@@ -60,7 +59,7 @@ public class TraineeController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] GET /api/trainees/{}", transactionId, username);
 
-        TraineeDTO.Response.Profile response = traineeFacade.getTraineeProfile(username, password);
+        TraineeDTO.Response.Profile response = traineeService.findTraineeByUsername(username, password);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);
@@ -76,7 +75,7 @@ public class TraineeController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] GET /api/trainees/{}/trainings", transactionId, username);
 
-        List<TrainingDTO.Response.TraineeTraining> response = traineeFacade.getTraineeTrainings(
+        List<TrainingDTO.Response.TraineeTraining> response = traineeService.getTraineeTrainings(
                 username, password, filter.periodFrom(), filter.periodTo(), filter.trainerName(), filter.trainingType());
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
@@ -92,7 +91,7 @@ public class TraineeController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] GET /api/trainees/{}/trainers/unassigned", transactionId, username);
 
-        List<TrainerDTO.Response.Unassigned> response = traineeFacade.getUnassignedTrainers(username, password);
+        List<TrainerDTO.Response.Unassigned> response = traineeService.getUnassignedTrainers(username, password);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);
@@ -108,7 +107,7 @@ public class TraineeController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] PUT /api/trainees/{}", transactionId, username);
 
-        TraineeDTO.Response.Updated response = traineeFacade.updateTrainee(request, username, password);
+        TraineeDTO.Response.Updated response = traineeService.updateTrainee(request, username, password);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);
@@ -124,7 +123,7 @@ public class TraineeController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] PATCH /api/trainees/{}/activate", transactionId, username);
 
-        traineeFacade.updateTraineeStatus(username, request.isActive(), password);
+        traineeService.updateTraineeStatus(username, password, request.isActive());
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok().build();
@@ -140,7 +139,7 @@ public class TraineeController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] PUT /api/trainees/{}/trainers", transactionId, username);
 
-        List<TrainerDTO.Response.InList> response = traineeFacade.updateTraineeTrainers(username, request, password);
+        List<TrainerDTO.Response.InList> response = traineeService.updateTraineeTrainers(username, request, password);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);
@@ -155,7 +154,7 @@ public class TraineeController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] DELETE /api/trainees/{}", transactionId, username);
 
-        traineeFacade.deleteTrainee(username, password);
+        traineeService.deleteTraineeByUsername(username, password);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok().build();

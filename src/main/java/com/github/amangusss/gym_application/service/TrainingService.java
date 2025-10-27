@@ -1,8 +1,8 @@
 package com.github.amangusss.gym_application.service;
 
-import com.github.amangusss.gym_application.entity.training.Training;
+import com.github.amangusss.gym_application.dto.training.TrainingDTO;
 
 public interface TrainingService {
 
-    Training addTraining(Training training);
+    void addTraining(TrainingDTO.Request.Create request);
 }
