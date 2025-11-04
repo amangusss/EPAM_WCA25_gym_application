@@ -3,7 +3,9 @@ package com.github.amangusss.gym_application.controller;
 import com.github.amangusss.gym_application.dto.trainee.TraineeDTO;
 import com.github.amangusss.gym_application.dto.trainer.TrainerDTO;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
-import com.github.amangusss.gym_application.facade.TraineeFacade;
+import com.github.amangusss.gym_application.metrics.ApiPerformanceMetrics;
+import com.github.amangusss.gym_application.metrics.TraineeMetrics;
+import com.github.amangusss.gym_application.service.TraineeService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,11 +67,17 @@ class TraineeControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private TraineeFacade traineeFacade;
+    private TraineeService traineeService;
+
+    @MockitoBean
+    private TraineeMetrics traineeMetrics;
+
+    @MockitoBean
+    private ApiPerformanceMetrics apiPerformanceMetrics;
 
     @BeforeEach
     void setUp() {
-        reset(traineeFacade);
+        reset(traineeService, traineeMetrics, apiPerformanceMetrics);
     }
 
     @Test
@@ -77,7 +85,7 @@ class TraineeControllerTest {
     void shouldReturnOkAndRegisteredResponseWhenTraineeRegistersSuccessfully() throws Exception {
         TraineeDTO.Request.Register registerRequest = createRegisterRequest();
         TraineeDTO.Response.Registered expectedResponse = createRegisteredResponse();
-        when(traineeFacade.registerTrainee(any(TraineeDTO.Request.Register.class))).thenReturn(expectedResponse);
+        when(traineeService.createTrainee(any(TraineeDTO.Request.Register.class))).thenReturn(expectedResponse);
 
         mockMvc.perform(post(REGISTER_ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -86,14 +94,14 @@ class TraineeControllerTest {
                 .andExpect(jsonPath("$.username").value(TRAINEE_USERNAME))
                 .andExpect(jsonPath("$.password").value(VALID_PASSWORD));
 
-        verify(traineeFacade, times(1)).registerTrainee(any(TraineeDTO.Request.Register.class));
+        verify(traineeService, times(1)).createTrainee(any(TraineeDTO.Request.Register.class));
     }
 
     @Test
     @DisplayName("Should return 200 OK and profile when getting trainee profile")
     void shouldReturnOkAndProfileWhenGettingTraineeProfile() throws Exception {
         TraineeDTO.Response.Profile expectedProfile = createTraineeProfile();
-        when(traineeFacade.getTraineeProfile(TRAINEE_USERNAME, VALID_PASSWORD)).thenReturn(expectedProfile);
+        when(traineeService.findTraineeByUsername(TRAINEE_USERNAME, VALID_PASSWORD)).thenReturn(expectedProfile);
 
         mockMvc.perform(get(TRAINEE_BY_USERNAME_ENDPOINT, TRAINEE_USERNAME)
                         .param("password", VALID_PASSWORD))
@@ -103,7 +111,7 @@ class TraineeControllerTest {
                 .andExpect(jsonPath("$.dateOfBirth").value(BIRTH_DATE.toString()))
                 .andExpect(jsonPath("$.address").value(ADDRESS));
 
-        verify(traineeFacade, times(1)).getTraineeProfile(TRAINEE_USERNAME, VALID_PASSWORD);
+        verify(traineeService, times(1)).findTraineeByUsername(TRAINEE_USERNAME, VALID_PASSWORD);
     }
 
     @Test
@@ -111,7 +119,7 @@ class TraineeControllerTest {
     void shouldReturnOkAndUpdatedResponseWhenTraineeUpdatesSuccessfully() throws Exception {
         TraineeDTO.Request.Update updateRequest = createUpdateRequest();
         TraineeDTO.Response.Updated expectedResponse = createUpdatedResponse();
-        when(traineeFacade.updateTrainee(any(TraineeDTO.Request.Update.class), any(), eq(VALID_PASSWORD)))
+        when(traineeService.updateTrainee(any(TraineeDTO.Request.Update.class), any(), eq(VALID_PASSWORD)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(put(TRAINEE_BY_USERNAME_ENDPOINT, TRAINEE_USERNAME)
@@ -122,19 +130,19 @@ class TraineeControllerTest {
                 .andExpect(jsonPath("$.username").value(TRAINEE_USERNAME))
                 .andExpect(jsonPath("$.address").value(NEW_ADDRESS));
 
-        verify(traineeFacade, times(1)).updateTrainee(any(TraineeDTO.Request.Update.class), any(), eq(VALID_PASSWORD));
+        verify(traineeService, times(1)).updateTrainee(any(TraineeDTO.Request.Update.class), any(), eq(VALID_PASSWORD));
     }
 
     @Test
     @DisplayName("Should return 200 OK when deleting trainee successfully")
     void shouldReturnOkWhenDeletingTraineeSuccessfully() throws Exception {
-        doNothing().when(traineeFacade).deleteTrainee(TRAINEE_USERNAME, VALID_PASSWORD);
+        doNothing().when(traineeService).deleteTraineeByUsername(TRAINEE_USERNAME, VALID_PASSWORD);
 
         mockMvc.perform(delete(TRAINEE_BY_USERNAME_ENDPOINT, TRAINEE_USERNAME)
                         .param("password", VALID_PASSWORD))
                 .andExpect(status().isOk());
 
-        verify(traineeFacade, times(1)).deleteTrainee(TRAINEE_USERNAME, VALID_PASSWORD);
+        verify(traineeService, times(1)).deleteTraineeByUsername(TRAINEE_USERNAME, VALID_PASSWORD);
     }
 
     @Test
@@ -142,7 +150,7 @@ class TraineeControllerTest {
     void shouldReturnOkWhenUpdatingTraineeStatusSuccessfully() throws Exception {
         boolean newStatus = false;
         TraineeDTO.Request.UpdateStatus statusRequest = new TraineeDTO.Request.UpdateStatus(TRAINEE_USERNAME, newStatus);
-        doNothing().when(traineeFacade).updateTraineeStatus(TRAINEE_USERNAME, newStatus, VALID_PASSWORD);
+        doNothing().when(traineeService).updateTraineeStatus(TRAINEE_USERNAME, VALID_PASSWORD, newStatus);
 
         mockMvc.perform(patch(ACTIVATE_ENDPOINT, TRAINEE_USERNAME)
                         .param("password", VALID_PASSWORD)
@@ -150,14 +158,14 @@ class TraineeControllerTest {
                         .content(objectMapper.writeValueAsString(statusRequest)))
                 .andExpect(status().isOk());
 
-        verify(traineeFacade, times(1)).updateTraineeStatus(TRAINEE_USERNAME, newStatus, VALID_PASSWORD);
+        verify(traineeService, times(1)).updateTraineeStatus(TRAINEE_USERNAME, VALID_PASSWORD, newStatus);
     }
 
     @Test
     @DisplayName("Should return 200 OK and trainings list when getting trainee trainings")
     void shouldReturnOkAndTrainingsListWhenGettingTraineeTrainings() throws Exception {
         List<TrainingDTO.Response.TraineeTraining> expectedTrainings = Collections.emptyList();
-        when(traineeFacade.getTraineeTrainings(
+        when(traineeService.getTraineeTrainings(
                 TRAINEE_USERNAME, VALID_PASSWORD, PERIOD_FROM, PERIOD_TO, TRAINER_NAME, TRAINING_TYPE))
                 .thenReturn(expectedTrainings);
 
@@ -171,7 +179,7 @@ class TraineeControllerTest {
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(0));
 
-        verify(traineeFacade, times(1)).getTraineeTrainings(
+        verify(traineeService, times(1)).getTraineeTrainings(
                 TRAINEE_USERNAME, VALID_PASSWORD, PERIOD_FROM, PERIOD_TO, TRAINER_NAME, TRAINING_TYPE);
     }
 
@@ -179,7 +187,7 @@ class TraineeControllerTest {
     @DisplayName("Should return 200 OK and unassigned trainers list when getting unassigned trainers")
     void shouldReturnOkAndUnassignedTrainersListWhenGettingUnassignedTrainers() throws Exception {
         List<TrainerDTO.Response.Unassigned> expectedTrainers = Collections.emptyList();
-        when(traineeFacade.getUnassignedTrainers(TRAINEE_USERNAME, VALID_PASSWORD)).thenReturn(expectedTrainers);
+        when(traineeService.getUnassignedTrainers(TRAINEE_USERNAME, VALID_PASSWORD)).thenReturn(expectedTrainers);
 
         mockMvc.perform(get(UNASSIGNED_TRAINERS_ENDPOINT, TRAINEE_USERNAME)
                         .param("password", VALID_PASSWORD))
@@ -187,7 +195,7 @@ class TraineeControllerTest {
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(0));
 
-        verify(traineeFacade, times(1)).getUnassignedTrainers(TRAINEE_USERNAME, VALID_PASSWORD);
+        verify(traineeService, times(1)).getUnassignedTrainers(TRAINEE_USERNAME, VALID_PASSWORD);
     }
 
     @Test
@@ -195,7 +203,7 @@ class TraineeControllerTest {
     void shouldReturnOkAndTrainersListWhenUpdatingTraineeTrainers() throws Exception {
         TraineeDTO.Request.UpdateTrainers updateTrainersRequest = createUpdateTrainersRequest();
         List<TrainerDTO.Response.InList> expectedTrainers = Collections.emptyList();
-        when(traineeFacade.updateTraineeTrainers(eq(TRAINEE_USERNAME), any(), eq(VALID_PASSWORD)))
+        when(traineeService.updateTraineeTrainers(eq(TRAINEE_USERNAME), any(), eq(VALID_PASSWORD)))
                 .thenReturn(expectedTrainers);
 
         mockMvc.perform(put(UPDATE_TRAINERS_ENDPOINT, TRAINEE_USERNAME)
@@ -205,7 +213,7 @@ class TraineeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
 
-        verify(traineeFacade, times(1)).updateTraineeTrainers(eq(TRAINEE_USERNAME), any(), eq(VALID_PASSWORD));
+        verify(traineeService, times(1)).updateTraineeTrainers(eq(TRAINEE_USERNAME), any(), eq(VALID_PASSWORD));
     }
 
     private TraineeDTO.Request.Register createRegisterRequest() {

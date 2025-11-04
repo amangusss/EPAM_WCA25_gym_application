@@ -60,6 +60,20 @@ public class TraineeMapper {
         );
     }
 
+    public Trainee toUpdateEntity(TraineeDTO.Request.Update request) {
+        User user = User.builder()
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .isActive(request.isActive())
+                .build();
+
+        return Trainee.builder()
+                .user(user)
+                .dateOfBirth(request.dateOfBirth())
+                .address(request.address())
+                .build();
+    }
+
     public Trainee toEntity(TraineeDTO.Request.Register request) {
         User user = User.builder()
                 .firstName(request.firstName())

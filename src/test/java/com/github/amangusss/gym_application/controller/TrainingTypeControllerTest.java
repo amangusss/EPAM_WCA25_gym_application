@@ -1,7 +1,9 @@
 package com.github.amangusss.gym_application.controller;
 
 import com.github.amangusss.gym_application.dto.trainingtype.TrainingTypeDTO;
-import com.github.amangusss.gym_application.facade.TrainingTypeFacade;
+import com.github.amangusss.gym_application.metrics.ApiPerformanceMetrics;
+import com.github.amangusss.gym_application.metrics.TrainingTypeMetrics;
+import com.github.amangusss.gym_application.service.TrainingTypeService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,18 +44,24 @@ class TrainingTypeControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private TrainingTypeFacade trainingTypeFacade;
+    private TrainingTypeService trainingTypeService;
+
+    @MockitoBean
+    private TrainingTypeMetrics trainingTypeMetrics;
+
+    @MockitoBean
+    private ApiPerformanceMetrics apiPerformanceMetrics;
 
     @BeforeEach
     void setUp() {
-        reset(trainingTypeFacade);
+        reset(trainingTypeService, trainingTypeMetrics, apiPerformanceMetrics);
     }
 
     @Test
     @DisplayName("Should return 200 OK and list of training types when getting all training types")
     void shouldReturnOkAndListOfTrainingTypesWhenGettingAllTrainingTypes() throws Exception {
         List<TrainingTypeDTO.Response.TrainingType> expectedTrainingTypes = createTrainingTypesList();
-        when(trainingTypeFacade.getAllTrainingTypes()).thenReturn(expectedTrainingTypes);
+        when(trainingTypeService.getAllTrainingTypes()).thenReturn(expectedTrainingTypes);
 
         mockMvc.perform(get(TRAINING_TYPES_ENDPOINT))
                 .andExpect(status().isOk())
@@ -66,21 +74,21 @@ class TrainingTypeControllerTest {
                 .andExpect(jsonPath("$[2].id").value(CARDIO_ID))
                 .andExpect(jsonPath("$[2].typeName").value(CARDIO_NAME));
 
-        verify(trainingTypeFacade, times(1)).getAllTrainingTypes();
+        verify(trainingTypeService, times(1)).getAllTrainingTypes();
     }
 
     @Test
     @DisplayName("Should return 200 OK and empty list when no training types exist")
     void shouldReturnOkAndEmptyListWhenNoTrainingTypesExist() throws Exception {
         List<TrainingTypeDTO.Response.TrainingType> emptyList = Collections.emptyList();
-        when(trainingTypeFacade.getAllTrainingTypes()).thenReturn(emptyList);
+        when(trainingTypeService.getAllTrainingTypes()).thenReturn(emptyList);
 
         mockMvc.perform(get(TRAINING_TYPES_ENDPOINT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(0));
 
-        verify(trainingTypeFacade, times(1)).getAllTrainingTypes();
+        verify(trainingTypeService, times(1)).getAllTrainingTypes();
     }
 
     @Test
@@ -89,7 +97,7 @@ class TrainingTypeControllerTest {
         List<TrainingTypeDTO.Response.TrainingType> singleTypeList = List.of(
                 createTrainingType(YOGA_ID, YOGA_NAME)
         );
-        when(trainingTypeFacade.getAllTrainingTypes()).thenReturn(singleTypeList);
+        when(trainingTypeService.getAllTrainingTypes()).thenReturn(singleTypeList);
 
         mockMvc.perform(get(TRAINING_TYPES_ENDPOINT))
                 .andExpect(status().isOk())
@@ -98,7 +106,7 @@ class TrainingTypeControllerTest {
                 .andExpect(jsonPath("$[0].id").value(YOGA_ID))
                 .andExpect(jsonPath("$[0].typeName").value(YOGA_NAME));
 
-        verify(trainingTypeFacade, times(1)).getAllTrainingTypes();
+        verify(trainingTypeService, times(1)).getAllTrainingTypes();
     }
 
 

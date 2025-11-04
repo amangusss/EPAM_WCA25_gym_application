@@ -1,17 +1,15 @@
 package com.github.amangusss.gym_application.util.credentials;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Random;
 
+@Slf4j
 @Component("passwordGenerator")
 public class PasswordGenerator {
-
-    public static final Logger logger = LoggerFactory.getLogger(PasswordGenerator.class);
 
     private final Random random = new Random();
     private final String passwordCharacters;
@@ -31,7 +29,7 @@ public class PasswordGenerator {
             password.append(passwordCharacters.charAt(randomIndex));
         }
 
-        logger.debug("Password generated successfully");
+        log.debug("Password generated successfully");
         return password.toString();
     }
 }

@@ -1,14 +1,16 @@
 package com.github.amangusss.gym_application.controller;
 
 import com.github.amangusss.gym_application.dto.auth.AuthDTO;
-import com.github.amangusss.gym_application.facade.AuthFacade;
+import com.github.amangusss.gym_application.service.AuthService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.ResponseEntity;
@@ -25,10 +27,11 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Tag(name = "Authentication", description = "Authentication APIs")
 public class AuthController {
 
-    private final AuthFacade authFacade;
+    AuthService authService;
 
     @GetMapping("/login")
     @Operation(summary = "Login", description = "Authenticates user (trainee or trainer) with username and password")
@@ -37,7 +40,7 @@ public class AuthController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] GET /api/auth/login", transactionId);
 
-        boolean authenticated = authFacade.login(request);
+        boolean authenticated = authService.login(request);
 
         if (!authenticated) {
             log.warn("[Transaction: {}] Response: 401 Unauthorized", transactionId);
@@ -55,7 +58,7 @@ public class AuthController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] PUT /api/auth/change-password", transactionId);
 
-        boolean success = authFacade.changePassword(request);
+        boolean success = authService.changePassword(request);
 
         if (!success) {
             log.error("[Transaction: {}] Response: 401 Unauthorized", transactionId);

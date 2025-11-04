@@ -1,22 +1,27 @@
-package com.github.amangusss.gym_application.facade;
+package com.github.amangusss.gym_application.service.impl;
 
 import com.github.amangusss.gym_application.dto.auth.AuthDTO;
+import com.github.amangusss.gym_application.service.AuthService;
 import com.github.amangusss.gym_application.service.TraineeService;
 import com.github.amangusss.gym_application.service.TrainerService;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
-public class AuthFacade {
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class AuthServiceImpl implements AuthService {
 
-    private final TraineeService traineeService;
-    private final TrainerService trainerService;
+    TraineeService traineeService;
+    TrainerService trainerService;
 
+    @Override
     public boolean login(AuthDTO.Request.Login request) {
         log.debug("Authenticating user: {}", request.username());
 
@@ -27,6 +32,7 @@ public class AuthFacade {
         return authenticated;
     }
 
+    @Override
     public boolean changePassword(AuthDTO.Request.ChangePassword request) {
         log.debug("Changing password for user: {}", request.username());
 

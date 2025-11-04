@@ -1,11 +1,16 @@
 package com.github.amangusss.gym_application.service;
 
+import com.github.amangusss.gym_application.dto.training.TrainingDTO;
 import com.github.amangusss.gym_application.entity.TrainingType;
 import com.github.amangusss.gym_application.entity.User;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.training.Training;
+import com.github.amangusss.gym_application.exception.TraineeNotFoundException;
+import com.github.amangusss.gym_application.exception.TrainerNotFoundException;
 import com.github.amangusss.gym_application.exception.ValidationException;
+import com.github.amangusss.gym_application.repository.TraineeRepository;
+import com.github.amangusss.gym_application.repository.TrainerRepository;
 import com.github.amangusss.gym_application.repository.TrainingRepository;
 import com.github.amangusss.gym_application.service.impl.TrainingServiceImpl;
 import com.github.amangusss.gym_application.validation.training.TrainingEntityValidation;
@@ -22,6 +27,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("TrainingService Tests")
@@ -45,13 +51,17 @@ class TrainingServiceTest {
     private static final String TRAINING_TYPE_NAME = "Yoga";
     private static final String TRAINING_NAME = "Morning Yoga";
     private static final int TRAINING_DURATION = 60;
-    private static final int UPDATED_TRAINING_DURATION = 120;
     private static final boolean IS_ACTIVE = true;
     private static final String NULL_TRAINING_ERROR = "Training cannot be null";
-    private static final String NULL_TRAINING_NAME_ERROR = "Training name cannot be null";
 
     @Mock
     private TrainingRepository trainingRepository;
+
+    @Mock
+    private TraineeRepository traineeRepository;
+
+    @Mock
+    private TrainerRepository trainerRepository;
 
     @Mock
     private TrainingEntityValidation trainingEntityValidation;
@@ -61,10 +71,13 @@ class TrainingServiceTest {
 
     private Training testTraining;
     private TrainingType testTrainingType;
+    private Trainee testTrainee;
+    private Trainer testTrainer;
+    private TrainingDTO.Request.Create createRequest;
 
     @BeforeEach
     void setUp() {
-        Mockito.reset(trainingRepository, trainingEntityValidation);
+        Mockito.reset(trainingRepository, traineeRepository, trainerRepository, trainingEntityValidation);
 
         testTrainingType = TrainingType.builder()
                 .id(TRAINING_TYPE_ID)
@@ -80,7 +93,7 @@ class TrainingServiceTest {
                 .isActive(IS_ACTIVE)
                 .build();
 
-        Trainee testTrainee = Trainee.builder()
+        testTrainee = Trainee.builder()
                 .id(TRAINEE_ID)
                 .user(traineeUser)
                 .dateOfBirth(TRAINEE_BIRTH_DATE)
@@ -96,7 +109,7 @@ class TrainingServiceTest {
                 .isActive(IS_ACTIVE)
                 .build();
 
-        Trainer testTrainer = Trainer.builder()
+        testTrainer = Trainer.builder()
                 .id(TRAINER_ID)
                 .user(trainerUser)
                 .specialization(testTrainingType)
@@ -111,62 +124,70 @@ class TrainingServiceTest {
                 .trainingDate(LocalDate.now())
                 .trainingDuration(TRAINING_DURATION)
                 .build();
+
+        createRequest = new TrainingDTO.Request.Create(
+                TRAINEE_USERNAME, TRAINER_USERNAME, TRAINING_NAME,
+                LocalDate.now(), TRAINING_DURATION);
     }
 
     @Test
     @DisplayName("Should add training successfully when training data is valid")
     void shouldAddTrainingSuccessfullyWhenTrainingDataIsValid() {
+        Mockito.when(traineeRepository.findByUserUsername(TRAINEE_USERNAME))
+                .thenReturn(Optional.of(testTrainee));
+        Mockito.when(trainerRepository.findByUserUsername(TRAINER_USERNAME))
+                .thenReturn(Optional.of(testTrainer));
         Mockito.doNothing().when(trainingEntityValidation).validateTrainingForAddition(ArgumentMatchers.any());
         Mockito.when(trainingRepository.save(ArgumentMatchers.any(Training.class))).thenReturn(testTraining);
 
-        Training result = trainingService.addTraining(testTraining);
+        trainingService.addTraining(createRequest);
 
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result.getTrainingName()).isEqualTo(TRAINING_NAME);
-        Assertions.assertThat(result.getTrainingDuration()).isEqualTo(TRAINING_DURATION);
-        Assertions.assertThat(result.getTrainingType()).isEqualTo(testTrainingType);
-
-        Mockito.verify(trainingEntityValidation, Mockito.times(1)).validateTrainingForAddition(testTraining);
-        Mockito.verify(trainingRepository, Mockito.times(1)).save(testTraining);
+        Mockito.verify(trainingEntityValidation, Mockito.times(1)).validateTrainingForAddition(ArgumentMatchers.any());
+        Mockito.verify(trainingRepository, Mockito.times(1)).save(ArgumentMatchers.any(Training.class));
     }
 
     @Test
-    @DisplayName("Should throw ValidationException when training is null")
-    void shouldThrowValidationExceptionWhenTrainingIsNull() {
-        Mockito.doThrow(new ValidationException(NULL_TRAINING_ERROR))
-                .when(trainingEntityValidation).validateTrainingForAddition(null);
+    @DisplayName("Should throw TraineeNotFoundException when trainee not found")
+    void shouldThrowTraineeNotFoundExceptionWhenTraineeNotFound() {
+        Mockito.when(traineeRepository.findByUserUsername(TRAINEE_USERNAME))
+                .thenReturn(Optional.empty());
 
-        Assertions.assertThatThrownBy(() -> trainingService.addTraining(null))
-                .isInstanceOf(ValidationException.class)
-                .hasMessageContaining(NULL_TRAINING_ERROR);
+        Assertions.assertThatThrownBy(() -> trainingService.addTraining(createRequest))
+                .isInstanceOf(TraineeNotFoundException.class)
+                .hasMessageContaining("Trainee not found: " + TRAINEE_USERNAME);
 
-        Mockito.verify(trainingEntityValidation, Mockito.times(1)).validateTrainingForAddition(null);
+        Mockito.verify(trainingRepository, Mockito.never()).save(ArgumentMatchers.any());
+    }
+
+    @Test
+    @DisplayName("Should throw TrainerNotFoundException when trainer not found")
+    void shouldThrowTrainerNotFoundExceptionWhenTrainerNotFound() {
+        Mockito.when(traineeRepository.findByUserUsername(TRAINEE_USERNAME))
+                .thenReturn(Optional.of(testTrainee));
+        Mockito.when(trainerRepository.findByUserUsername(TRAINER_USERNAME))
+                .thenReturn(Optional.empty());
+
+        Assertions.assertThatThrownBy(() -> trainingService.addTraining(createRequest))
+                .isInstanceOf(TrainerNotFoundException.class)
+                .hasMessageContaining("Trainer not found: " + TRAINER_USERNAME);
+
+        Mockito.verify(trainingRepository, Mockito.never()).save(ArgumentMatchers.any());
     }
 
     @Test
     @DisplayName("Should throw ValidationException when training data is invalid")
     void shouldThrowValidationExceptionWhenTrainingDataIsInvalid() {
-        testTraining.setTrainingName(null);
-        Mockito.doThrow(new ValidationException(NULL_TRAINING_NAME_ERROR))
-                .when(trainingEntityValidation).validateTrainingForAddition(testTraining);
+        Mockito.when(traineeRepository.findByUserUsername(TRAINEE_USERNAME))
+                .thenReturn(Optional.of(testTrainee));
+        Mockito.when(trainerRepository.findByUserUsername(TRAINER_USERNAME))
+                .thenReturn(Optional.of(testTrainer));
+        Mockito.doThrow(new ValidationException(NULL_TRAINING_ERROR))
+                .when(trainingEntityValidation).validateTrainingForAddition(ArgumentMatchers.any());
 
-        Assertions.assertThatThrownBy(() -> trainingService.addTraining(testTraining))
+        Assertions.assertThatThrownBy(() -> trainingService.addTraining(createRequest))
                 .isInstanceOf(ValidationException.class);
 
-        Mockito.verify(trainingEntityValidation, Mockito.times(1)).validateTrainingForAddition(testTraining);
-    }
-
-    @Test
-    @DisplayName("Should add training with correct duration when duration is valid")
-    void shouldAddTrainingWithCorrectDurationWhenDurationIsValid() {
-        testTraining.setTrainingDuration(UPDATED_TRAINING_DURATION);
-        Mockito.doNothing().when(trainingEntityValidation).validateTrainingForAddition(ArgumentMatchers.any());
-        Mockito.when(trainingRepository.save(ArgumentMatchers.any(Training.class))).thenReturn(testTraining);
-
-        Training result = trainingService.addTraining(testTraining);
-
-        Assertions.assertThat(result.getTrainingDuration()).isEqualTo(UPDATED_TRAINING_DURATION);
-
-        Mockito.verify(trainingRepository, Mockito.times(1)).save(testTraining);
+        Mockito.verify(trainingEntityValidation, Mockito.times(1)).validateTrainingForAddition(ArgumentMatchers.any());
+        Mockito.verify(trainingRepository, Mockito.never()).save(ArgumentMatchers.any());
     }
 }

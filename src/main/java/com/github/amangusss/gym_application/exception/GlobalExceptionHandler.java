@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.UUID;
 
-//TODO переделать на норм обработку ошибок
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -22,12 +21,17 @@ public class GlobalExceptionHandler {
         String transactionId = UUID.randomUUID().toString();
 
         StringBuilder errorMessages = new StringBuilder();
-        ex.getBindingResult().getAllErrors().forEach(error -> {
+        ex.getBindingResult().getFieldErrors().forEach(error -> {
+            String fieldName = error.getField();
             String message = error.getDefaultMessage();
-            errorMessages.append(message).append("; ");
+            errorMessages.append(fieldName).append(": ").append(message).append("; ");
         });
 
         String finalMessage = errorMessages.toString();
+        if (finalMessage.endsWith("; ")) {
+            finalMessage = finalMessage.substring(0, finalMessage.length() - 2);
+        }
+
         log.error("[Transaction: {}] Validation error: {}", transactionId, finalMessage);
 
         ErrorResponse error = new ErrorResponse("Validation Error", finalMessage);
