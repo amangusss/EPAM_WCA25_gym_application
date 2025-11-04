@@ -12,28 +12,29 @@ import com.github.amangusss.gym_application.repository.TrainingRepository;
 import com.github.amangusss.gym_application.service.TrainingService;
 import com.github.amangusss.gym_application.validation.training.TrainingEntityValidation;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class TrainingServiceImpl implements TrainingService {
 
-    public static final Logger logger = LoggerFactory.getLogger(TrainingServiceImpl.class);
-
-    private final TrainingRepository trainingRepository;
-    private final TraineeRepository traineeRepository;
-    private final TrainerRepository trainerRepository;
-    private final TrainingEntityValidation trainingEntityValidation;
+    TrainingRepository trainingRepository;
+    TraineeRepository traineeRepository;
+    TrainerRepository trainerRepository;
+    TrainingEntityValidation trainingEntityValidation;
 
     @Override
     public void addTraining(TrainingDTO.Request.Create request) {
-        logger.debug("Adding new training: {} for trainee: {} and trainer: {}",
+        log.debug("Adding new training: {} for trainee: {} and trainer: {}",
                 request.trainingName(), request.traineeUsername(), request.trainerUsername());
 
         Trainee trainee = traineeRepository.findByUserUsername(request.traineeUsername())
@@ -54,6 +55,6 @@ public class TrainingServiceImpl implements TrainingService {
         trainingEntityValidation.validateTrainingForAddition(training);
 
         Training savedTraining = trainingRepository.save(training);
-        logger.info("Successfully added training with id: {}", savedTraining.getId());
+        log.info("Successfully added training with id: {}", savedTraining.getId());
     }
 }

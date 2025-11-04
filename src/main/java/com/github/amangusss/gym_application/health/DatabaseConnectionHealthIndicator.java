@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.sql.DataSource;
 import java.sql.Connection;
 
+//TODO make some tests for this health indicator
 @Slf4j
 @Component
 @RequiredArgsConstructor

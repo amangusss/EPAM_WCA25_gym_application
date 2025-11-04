@@ -2,6 +2,8 @@ package com.github.amangusss.gym_application.controller;
 
 import com.github.amangusss.gym_application.dto.trainer.TrainerDTO;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
+import com.github.amangusss.gym_application.metrics.ApiPerformanceMetrics;
+import com.github.amangusss.gym_application.metrics.TrainerMetrics;
 import com.github.amangusss.gym_application.service.TrainerService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,9 +63,15 @@ class TrainerControllerTest {
     @MockitoBean
     private TrainerService trainerService;
 
+    @MockitoBean
+    private TrainerMetrics trainerMetrics;
+
+    @MockitoBean
+    private ApiPerformanceMetrics apiPerformanceMetrics;
+
     @BeforeEach
     void setUp() {
-        reset(trainerService);
+        reset(trainerService, trainerMetrics, apiPerformanceMetrics);
     }
 
     @Test

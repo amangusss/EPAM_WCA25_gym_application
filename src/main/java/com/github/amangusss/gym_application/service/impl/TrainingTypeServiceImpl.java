@@ -7,7 +7,9 @@ import com.github.amangusss.gym_application.mapper.TrainingTypeMapper;
 import com.github.amangusss.gym_application.repository.TrainingTypeRepository;
 import com.github.amangusss.gym_application.service.TrainingTypeService;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
@@ -18,10 +20,11 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class TrainingTypeServiceImpl implements TrainingTypeService {
 
-    private final TrainingTypeRepository trainingTypeRepository;
-    private final TrainingTypeMapper trainingTypeMapper;
+    TrainingTypeRepository trainingTypeRepository;
+    TrainingTypeMapper trainingTypeMapper;
 
     @Override
     @Transactional(readOnly = true)

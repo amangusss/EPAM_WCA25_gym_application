@@ -2,16 +2,15 @@ package com.github.amangusss.gym_application.util.credentials;
 
 import com.github.amangusss.gym_application.exception.ValidationException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Component;
 
 import java.util.function.Predicate;
 
+@Slf4j
 @Component("usernameGenerator")
 public class UsernameGenerator {
-
-    public static final Logger logger = LoggerFactory.getLogger(UsernameGenerator.class);
 
     public String generateUsername(String firstName, String lastName, Predicate<String> usernameExistsChecker) {
         if (firstName == null || lastName == null) {
@@ -25,10 +24,10 @@ public class UsernameGenerator {
         while (usernameExistsChecker.test(username)) {
             username = baseUsername + counter;
             counter++;
-            logger.debug("Username {} already exists. Trying username {}", baseUsername, username);
+            log.debug("Username {} already exists. Trying username {}", baseUsername, username);
         }
 
-        logger.debug("Generated username: {}", username);
+        log.debug("Generated username: {}", username);
         return username;
     }
 }

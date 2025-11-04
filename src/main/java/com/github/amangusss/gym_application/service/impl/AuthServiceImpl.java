@@ -5,18 +5,21 @@ import com.github.amangusss.gym_application.service.AuthService;
 import com.github.amangusss.gym_application.service.TraineeService;
 import com.github.amangusss.gym_application.service.TrainerService;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthServiceImpl implements AuthService {
 
-    private final TraineeService traineeService;
-    private final TrainerService trainerService;
+    TraineeService traineeService;
+    TrainerService trainerService;
 
     @Override
     public boolean login(AuthDTO.Request.Login request) {

@@ -1,6 +1,8 @@
 package com.github.amangusss.gym_application.controller;
 
 import com.github.amangusss.gym_application.dto.trainingtype.TrainingTypeDTO;
+import com.github.amangusss.gym_application.metrics.ApiPerformanceMetrics;
+import com.github.amangusss.gym_application.metrics.TrainingTypeMetrics;
 import com.github.amangusss.gym_application.service.TrainingTypeService;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -44,9 +46,15 @@ class TrainingTypeControllerTest {
     @MockitoBean
     private TrainingTypeService trainingTypeService;
 
+    @MockitoBean
+    private TrainingTypeMetrics trainingTypeMetrics;
+
+    @MockitoBean
+    private ApiPerformanceMetrics apiPerformanceMetrics;
+
     @BeforeEach
     void setUp() {
-        reset(trainingTypeService);
+        reset(trainingTypeService, trainingTypeMetrics, apiPerformanceMetrics);
     }
 
     @Test
