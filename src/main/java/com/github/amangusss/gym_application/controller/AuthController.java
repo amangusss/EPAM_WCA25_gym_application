@@ -8,7 +8,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.ResponseEntity;
@@ -25,10 +27,11 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Tag(name = "Authentication", description = "Authentication APIs")
 public class AuthController {
 
-    private final AuthService authService;
+    AuthService authService;
 
     @GetMapping("/login")
     @Operation(summary = "Login", description = "Authenticates user (trainee or trainer) with username and password")

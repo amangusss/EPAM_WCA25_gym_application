@@ -17,43 +17,44 @@ import com.github.amangusss.gym_application.util.credentials.PasswordGenerator;
 import com.github.amangusss.gym_application.util.credentials.UsernameGenerator;
 import com.github.amangusss.gym_application.validation.trainer.TrainerEntityValidation;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class TrainerServiceImpl implements TrainerService {
 
-    public static final Logger logger = LoggerFactory.getLogger(TrainerServiceImpl.class);
-
-    private final TrainerRepository trainerRepository;
-    private final UserRepository userRepository;
-    private final UsernameGenerator usernameGenerator;
-    private final PasswordGenerator passwordGenerator;
-    private final TrainerEntityValidation trainerEntityValidation;
-    private final TrainerMapper trainerMapper;
-    private final TrainingMapper trainingMapper;
-    private final TrainingTypeService trainingTypeService;
+    TrainerRepository trainerRepository;
+    UserRepository userRepository;
+    UsernameGenerator usernameGenerator;
+    PasswordGenerator passwordGenerator;
+    TrainerEntityValidation trainerEntityValidation;
+    TrainerMapper trainerMapper;
+    TrainingMapper trainingMapper;
+    TrainingTypeService trainingTypeService;
 
     @Override
     @Transactional(readOnly = true)
     public boolean authenticateTrainer(String username, String password) {
-        logger.debug("Authenticating trainer: {}", username);
+        log.debug("Authenticating trainer: {}", username);
 
         boolean authenticated = trainerRepository.existsByUserUsernameAndUserPassword(username, password);
 
         if (authenticated) {
-            logger.info("Trainer authenticated successfully: {}", username);
+            log.info("Trainer authenticated successfully: {}", username);
         } else {
-            logger.warn("Authentication failed for trainer: {}", username);
+            log.warn("Authentication failed for trainer: {}", username);
         }
 
         return authenticated;
@@ -61,7 +62,7 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     public Trainer changeTrainerPassword(String username, String oldPassword, String newPassword) {
-        logger.debug("Changing password for trainer: {}", username);
+        log.debug("Changing password for trainer: {}", username);
         authenticationCheck(username, oldPassword);
         trainerEntityValidation.validatePasswordChange(oldPassword, newPassword);
 
@@ -69,13 +70,13 @@ public class TrainerServiceImpl implements TrainerService {
                 .orElseThrow(() -> new TrainerNotFoundException("Trainer not found with username: " + username));
         trainer.getUser().setPassword(newPassword);
         Trainer updatedTrainer = trainerRepository.save(trainer);
-        logger.info("Successfully changed password for trainer: {}", username);
+        log.info("Successfully changed password for trainer: {}", username);
         return updatedTrainer;
     }
 
     @Override
     public TrainerDTO.Response.Registered registerTrainer(TrainerDTO.Request.Register request) {
-        logger.debug("Registering new trainer with specialization ID: {}", request.specialization());
+        log.debug("Registering new trainer with specialization ID: {}", request.specialization());
 
         TrainingType specialization = trainingTypeService.findById(request.specialization());
         Trainer trainer = trainerMapper.toEntity(request, specialization);
@@ -85,7 +86,7 @@ public class TrainerServiceImpl implements TrainerService {
         trainer.getUser().setActive(true);
 
         Trainer savedTrainer = trainerRepository.save(trainer);
-        logger.info("Successfully created trainer profile with username: {}", savedTrainer.getUser().getUsername());
+        log.info("Successfully created trainer profile with username: {}", savedTrainer.getUser().getUsername());
         
         return trainerMapper.toRegisteredResponse(savedTrainer);
     }
@@ -93,19 +94,19 @@ public class TrainerServiceImpl implements TrainerService {
     @Override
     @Transactional(readOnly = true)
     public TrainerDTO.Response.Profile getTrainerProfile(String username, String password) {
-        logger.debug("Fetching trainer profile for username: {}", username);
+        log.debug("Fetching trainer profile for username: {}", username);
         authenticationCheck(username, password);
 
         Trainer trainer = trainerRepository.findByUserUsername(username)
                 .orElseThrow(() -> new TrainerNotFoundException("Trainer not found with username: " + username));
-        logger.info("Found trainer with username: {}", username);
+        log.info("Found trainer with username: {}", username);
         
         return trainerMapper.toProfileResponse(trainer);
     }
 
     @Override
     public TrainerDTO.Response.Updated updateTrainerProfile(TrainerDTO.Request.Update request, String username, String password) {
-        logger.debug("Updating trainer profile for username: {}", username);
+        log.debug("Updating trainer profile for username: {}", username);
         authenticationCheck(username, password);
 
         TrainingType specialization = trainingTypeService.findById(request.specialization());
@@ -120,14 +121,14 @@ public class TrainerServiceImpl implements TrainerService {
         existingTrainer.setSpecialization(updateData.getSpecialization());
 
         Trainer updatedTrainer = trainerRepository.save(existingTrainer);
-        logger.info("Successfully updated trainer profile with username: {}", updatedTrainer.getUser().getUsername());
+        log.info("Successfully updated trainer profile with username: {}", updatedTrainer.getUser().getUsername());
         
         return trainerMapper.toUpdatedResponse(updatedTrainer);
     }
 
     @Override
     public void updateTrainerStatus(String username, Boolean isActive, String password) {
-        logger.debug("Updating trainer status for username: {} to isActive: {}", username, isActive);
+        log.debug("Updating trainer status for username: {} to isActive: {}", username, isActive);
         authenticationCheck(username, password);
 
         Trainer trainer = trainerRepository.findByUserUsername(username)
@@ -135,14 +136,14 @@ public class TrainerServiceImpl implements TrainerService {
         trainer.getUser().setActive(isActive);
         trainerRepository.save(trainer);
         
-        logger.info("Successfully updated trainer status for username: {}", username);
+        log.info("Successfully updated trainer status for username: {}", username);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TrainingDTO.Response.TrainerTraining> getTrainerTrainings(
             String username, String password, LocalDate periodFrom, LocalDate periodTo, String traineeName) {
-        logger.debug("Fetching trainer trainings for username: {} with filters - periodFrom: {}, periodTo: {}, traineeName: {}",
+        log.debug("Fetching trainer trainings for username: {} with filters - periodFrom: {}, periodTo: {}, traineeName: {}",
                 username, periodFrom, periodTo, traineeName);
         authenticationCheck(username, password);
         trainerEntityValidation.validateDateRange(periodFrom, periodTo);
@@ -167,7 +168,7 @@ public class TrainerServiceImpl implements TrainerService {
                 .map(trainingMapper::toTrainerTrainingResponse)
                 .toList();
 
-        logger.info("Retrieved {} trainings for trainer: {}", response.size(), username);
+        log.info("Retrieved {} trainings for trainer: {}", response.size(), username);
         return response;
     }
 
@@ -178,7 +179,7 @@ public class TrainerServiceImpl implements TrainerService {
         String password = passwordGenerator.generatePassword();
         trainer.getUser().setPassword(password);
 
-        logger.debug("Generated credentials for trainer - username: {}", username);
+        log.debug("Generated credentials for trainer - username: {}", username);
     }
 
     private boolean usernameExists(String username) {
