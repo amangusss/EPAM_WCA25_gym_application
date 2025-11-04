@@ -24,7 +24,7 @@ import java.util.Objects;
 @Builder
 @Entity
 @Table(name = "users")
-public class User {
+public class CustomUser {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,7 +50,7 @@ public class User {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        User user = (User) o;
+        CustomUser user = (CustomUser) o;
         return id != null && Objects.equals(id, user.id);
     }
 

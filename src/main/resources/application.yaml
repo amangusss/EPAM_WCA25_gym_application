@@ -1,6 +1,14 @@
 password:
-  characters: ${PASSWORD_CHARACTERS:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789}
-  length: ${PASSWORD_LENGTH:10}
+  characters: ${PASSWORD_CHARACTERS}
+  length: ${PASSWORD_LENGTH}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+security:
+  max-login-attempts: ${MAX_LOGIN_ATTEMPTS:3}
+  lockout-duration: ${LOCKOUT_DURATION_MS:300000}
 
 spring:
   profiles:
@@ -47,9 +55,9 @@ management:
       show-details: always
       show-components: always
     metrics:
-      enabled: true
+      access: none
     prometheus:
-      enabled: true
+      access: none
   metrics:
     tags:
       application: gym-application
