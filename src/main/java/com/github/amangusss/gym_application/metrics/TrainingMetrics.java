@@ -18,7 +18,6 @@ public class TrainingMetrics {
     MeterRegistry meterRegistry;
     Counter trainingCreatedCounter;
     Counter trainingFailedCounter;
-    Counter trainingOperationsCounter;
 
     public TrainingMetrics(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
@@ -37,23 +36,16 @@ public class TrainingMetrics {
                 .tag("operation", "create")
                 .register(meterRegistry);
 
-        this.trainingOperationsCounter = Counter.builder("training.operations.total")
-                .description("Total number of training operations")
-                .tag("type", "training")
-                .register(meterRegistry);
-
         log.info("Training metrics initialized");
     }
 
     public void incrementTrainingCreated() {
         trainingCreatedCounter.increment();
-        trainingOperationsCounter.increment();
         log.debug("Training created counter incremented");
     }
 
     public void incrementTrainingFailed() {
         trainingFailedCounter.increment();
-        trainingOperationsCounter.increment();
         log.debug("Training failed counter incremented");
     }
 
