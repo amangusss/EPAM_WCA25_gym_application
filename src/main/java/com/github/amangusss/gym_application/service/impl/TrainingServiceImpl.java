@@ -10,7 +10,7 @@ import com.github.amangusss.gym_application.repository.TraineeRepository;
 import com.github.amangusss.gym_application.repository.TrainerRepository;
 import com.github.amangusss.gym_application.repository.TrainingRepository;
 import com.github.amangusss.gym_application.service.TrainingService;
-import com.github.amangusss.gym_application.validation.training.TrainingEntityValidation;
+import com.github.amangusss.gym_application.validation.entity.impl.EntityValidatorImpl;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ public class TrainingServiceImpl implements TrainingService {
     TrainingRepository trainingRepository;
     TraineeRepository traineeRepository;
     TrainerRepository trainerRepository;
-    TrainingEntityValidation trainingEntityValidation;
+    EntityValidatorImpl entityValidator;
 
     @Override
     public void addTraining(TrainingDTO.Request.Create request) {
@@ -40,8 +40,12 @@ public class TrainingServiceImpl implements TrainingService {
         Trainee trainee = traineeRepository.findByUserUsername(request.traineeUsername())
                 .orElseThrow(() -> new TraineeNotFoundException("Trainee not found: " + request.traineeUsername()));
 
+        entityValidator.validateTrainee(trainee);
+
         Trainer trainer = trainerRepository.findByUserUsername(request.trainerUsername())
                 .orElseThrow(() -> new TrainerNotFoundException("Trainer not found: " + request.trainerUsername()));
+
+        entityValidator.validateTrainer(trainer);
 
         Training training = Training.builder()
                 .trainee(trainee)
@@ -52,9 +56,11 @@ public class TrainingServiceImpl implements TrainingService {
                 .trainingDuration(request.trainingDuration())
                 .build();
 
-        trainingEntityValidation.validateTrainingForAddition(training);
+        entityValidator.validateTraining(training);
 
-        Training savedTraining = trainingRepository.save(training);
-        log.info("Successfully added training with id: {}", savedTraining.getId());
+        trainingRepository.save(training);
+
+        log.info("Successfully added training: {} for trainee: {} and trainer: {}",
+                training.getTrainingName(), trainee.getUser().getUsername(), trainer.getUser().getUsername());
     }
 }

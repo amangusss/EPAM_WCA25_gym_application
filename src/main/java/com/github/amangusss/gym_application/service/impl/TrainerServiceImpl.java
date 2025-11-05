@@ -5,7 +5,6 @@ import com.github.amangusss.gym_application.dto.training.TrainingDTO;
 import com.github.amangusss.gym_application.entity.TrainingType;
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.training.Training;
-import com.github.amangusss.gym_application.exception.AuthenticationException;
 import com.github.amangusss.gym_application.exception.TrainerNotFoundException;
 import com.github.amangusss.gym_application.mapper.TrainerMapper;
 import com.github.amangusss.gym_application.mapper.TrainingMapper;
@@ -15,7 +14,7 @@ import com.github.amangusss.gym_application.service.TrainerService;
 import com.github.amangusss.gym_application.service.TrainingTypeService;
 import com.github.amangusss.gym_application.util.credentials.PasswordGenerator;
 import com.github.amangusss.gym_application.util.credentials.UsernameGenerator;
-import com.github.amangusss.gym_application.validation.trainer.TrainerEntityValidation;
+import com.github.amangusss.gym_application.validation.entity.impl.EntityValidatorImpl;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -39,36 +38,23 @@ public class TrainerServiceImpl implements TrainerService {
     UserRepository userRepository;
     UsernameGenerator usernameGenerator;
     PasswordGenerator passwordGenerator;
-    TrainerEntityValidation trainerEntityValidation;
+    EntityValidatorImpl entityValidator;
     TrainerMapper trainerMapper;
     TrainingMapper trainingMapper;
     TrainingTypeService trainingTypeService;
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean authenticateTrainer(String username, String password) {
-        log.debug("Authenticating trainer: {}", username);
-
-        boolean authenticated = trainerRepository.existsByUserUsernameAndUserPassword(username, password);
-
-        if (authenticated) {
-            log.info("Trainer authenticated successfully: {}", username);
-        } else {
-            log.warn("Authentication failed for trainer: {}", username);
-        }
-
-        return authenticated;
-    }
+    org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Override
     public Trainer changeTrainerPassword(String username, String oldPassword, String newPassword) {
         log.debug("Changing password for trainer: {}", username);
-        authenticationCheck(username, oldPassword);
-        trainerEntityValidation.validatePasswordChange(oldPassword, newPassword);
 
         Trainer trainer = trainerRepository.findByUserUsername(username)
                 .orElseThrow(() -> new TrainerNotFoundException("Trainer not found with username: " + username));
-        trainer.getUser().setPassword(newPassword);
+
+        entityValidator.validatePasswordChange(oldPassword, newPassword, trainer.getUser().getPassword());
+
+        String hashedPassword = passwordEncoder.encode(newPassword);
+        trainer.getUser().setPassword(hashedPassword);
         Trainer updatedTrainer = trainerRepository.save(trainer);
         log.info("Successfully changed password for trainer: {}", username);
         return updatedTrainer;
@@ -80,22 +66,19 @@ public class TrainerServiceImpl implements TrainerService {
 
         TrainingType specialization = trainingTypeService.findById(request.specialization());
         Trainer trainer = trainerMapper.toEntity(request, specialization);
-        trainerEntityValidation.validateTrainerForCreationOrUpdate(trainer);
-        generateCredentials(trainer);
+        String plainPassword = generateCredentials(trainer);
 
         trainer.getUser().setActive(true);
 
         Trainer savedTrainer = trainerRepository.save(trainer);
-        log.info("Successfully created trainer profile with username: {}", savedTrainer.getUser().getUsername());
-        
-        return trainerMapper.toRegisteredResponse(savedTrainer);
+
+        return trainerMapper.toRegisteredResponse(savedTrainer, plainPassword);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public TrainerDTO.Response.Profile getTrainerProfile(String username, String password) {
+    public TrainerDTO.Response.Profile getTrainerProfile(String username) {
         log.debug("Fetching trainer profile for username: {}", username);
-        authenticationCheck(username, password);
 
         Trainer trainer = trainerRepository.findByUserUsername(username)
                 .orElseThrow(() -> new TrainerNotFoundException("Trainer not found with username: " + username));
@@ -105,52 +88,50 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
-    public TrainerDTO.Response.Updated updateTrainerProfile(TrainerDTO.Request.Update request, String username, String password) {
+    public TrainerDTO.Response.Updated updateTrainerProfile(TrainerDTO.Request.Update request, String username) {
         log.debug("Updating trainer profile for username: {}", username);
-        authenticationCheck(username, password);
 
         TrainingType specialization = trainingTypeService.findById(request.specialization());
         Trainer updateData = trainerMapper.toUpdateEntity(request, specialization);
-        trainerEntityValidation.validateTrainerForCreationOrUpdate(updateData);
 
         Trainer existingTrainer = trainerRepository.findByUserUsername(username)
                 .orElseThrow(() -> new TrainerNotFoundException("Trainer not found with username: " + username));
 
         existingTrainer.getUser().setFirstName(updateData.getUser().getFirstName());
         existingTrainer.getUser().setLastName(updateData.getUser().getLastName());
+        existingTrainer.getUser().setActive(updateData.getUser().isActive());
         existingTrainer.setSpecialization(updateData.getSpecialization());
 
         Trainer updatedTrainer = trainerRepository.save(existingTrainer);
+
         log.info("Successfully updated trainer profile with username: {}", updatedTrainer.getUser().getUsername());
         
         return trainerMapper.toUpdatedResponse(updatedTrainer);
     }
 
     @Override
-    public void updateTrainerStatus(String username, Boolean isActive, String password) {
+    public void updateTrainerStatus(String username, Boolean isActive) {
         log.debug("Updating trainer status for username: {} to isActive: {}", username, isActive);
-        authenticationCheck(username, password);
 
         Trainer trainer = trainerRepository.findByUserUsername(username)
                 .orElseThrow(() -> new TrainerNotFoundException("Trainer not found with username: " + username));
         trainer.getUser().setActive(isActive);
         trainerRepository.save(trainer);
-        
+
         log.info("Successfully updated trainer status for username: {}", username);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TrainingDTO.Response.TrainerTraining> getTrainerTrainings(
-            String username, String password, LocalDate periodFrom, LocalDate periodTo, String traineeName) {
+            String username, LocalDate periodFrom, LocalDate periodTo, String traineeName) {
         log.debug("Fetching trainer trainings for username: {} with filters - periodFrom: {}, periodTo: {}, traineeName: {}",
                 username, periodFrom, periodTo, traineeName);
-        authenticationCheck(username, password);
-        trainerEntityValidation.validateDateRange(periodFrom, periodTo);
+        entityValidator.validateDateRange(periodFrom, periodTo);
 
         Trainer trainer = trainerRepository.findByUserUsername(username)
                 .orElseThrow(() -> new TrainerNotFoundException("Trainer not found with username: " + username));
-        
+
         List<Training> trainings = trainer.getTrainings().stream()
                 .filter(training -> {
                     if (periodFrom != null && training.getTrainingDate().isBefore(periodFrom)) return false;
@@ -172,23 +153,19 @@ public class TrainerServiceImpl implements TrainerService {
         return response;
     }
 
-    private void generateCredentials(Trainer trainer) {
+    private String generateCredentials(Trainer trainer) {
         String username = usernameGenerator.generateUsername(trainer.getUser().getFirstName(), trainer.getUser().getLastName(), this::usernameExists);
         trainer.getUser().setUsername(username);
 
         String password = passwordGenerator.generatePassword();
-        trainer.getUser().setPassword(password);
+        String hashedPassword = passwordEncoder.encode(password);
+        trainer.getUser().setPassword(hashedPassword);
 
-        log.debug("Generated credentials for trainer - username: {}", username);
+        log.debug("Generated credentials for trainer - username: {}, password hashed", username);
+        return password;
     }
 
     private boolean usernameExists(String username) {
         return userRepository.existsByUsername(username);
-    }
-
-    private void authenticationCheck(String username, String password) {
-        if (!trainerRepository.existsByUserUsernameAndUserPassword(username, password)) {
-            throw new AuthenticationException("Authentication failed for trainer: " + username);
-        }
     }
 }
