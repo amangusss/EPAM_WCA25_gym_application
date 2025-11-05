@@ -4,6 +4,7 @@ import com.github.amangusss.gym_application.dto.auth.AuthDTO;
 
 public interface AuthService {
 
-    boolean login(AuthDTO.Request.Login request);
-    boolean changePassword(AuthDTO.Request.ChangePassword request);
+    AuthDTO.Response.Login login(AuthDTO.Request.Login request);
+    void changePassword(AuthDTO.Request.ChangePassword request);
+    void logout(String username);
 }

@@ -1,6 +1,6 @@
 package com.github.amangusss.gym_application.entity.trainee;
 
-import com.github.amangusss.gym_application.entity.User;
+import com.github.amangusss.gym_application.entity.CustomUser;
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.training.Training;
 
@@ -46,7 +46,7 @@ public class Trainee {
 
     @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
-    private User user;
+    private CustomUser user;
 
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
