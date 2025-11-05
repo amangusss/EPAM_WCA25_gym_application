@@ -1,7 +1,7 @@
 package com.github.amangusss.gym_application.mapper;
 
 import com.github.amangusss.gym_application.dto.trainee.TraineeDTO;
-import com.github.amangusss.gym_application.entity.User;
+import com.github.amangusss.gym_application.entity.CustomUser;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
 
 import org.springframework.context.annotation.Lazy;
@@ -18,10 +18,10 @@ public class TraineeMapper {
         this.trainerMapper = trainerMapper;
     }
 
-    public TraineeDTO.Response.Registered toRegisteredResponse(Trainee trainee) {
+    public TraineeDTO.Response.Registered toRegisteredResponse(Trainee trainee, String plainPassword) {
         return new TraineeDTO.Response.Registered(
                 trainee.getUser().getUsername(),
-                trainee.getUser().getPassword()
+                plainPassword
         );
     }
 
@@ -61,7 +61,7 @@ public class TraineeMapper {
     }
 
     public Trainee toUpdateEntity(TraineeDTO.Request.Update request) {
-        User user = User.builder()
+        CustomUser user = CustomUser.builder()
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .isActive(request.isActive())
@@ -75,7 +75,7 @@ public class TraineeMapper {
     }
 
     public Trainee toEntity(TraineeDTO.Request.Register request) {
-        User user = User.builder()
+        CustomUser user = CustomUser.builder()
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .isActive(false)

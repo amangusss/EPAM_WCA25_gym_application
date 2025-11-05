@@ -4,6 +4,7 @@ import com.github.amangusss.gym_application.dto.auth.AuthDTO;
 import com.github.amangusss.gym_application.service.AuthService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
@@ -14,8 +15,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,39 +34,45 @@ public class AuthController {
 
     AuthService authService;
 
-    @GetMapping("/login")
-    @Operation(summary = "Login", description = "Authenticates user (trainee or trainer) with username and password")
-    public ResponseEntity<Void> login(@Valid @ModelAttribute AuthDTO.Request.Login request) {
+    @PostMapping("/login")
+    @Operation(summary = "Login", description = "Authenticates user (trainee or trainer) with username and password. Returns JWT token.")
+    public ResponseEntity<AuthDTO.Response.Login> login(@Valid @RequestBody AuthDTO.Request.Login request) {
 
         String transactionId = UUID.randomUUID().toString();
-        log.info("[Transaction: {}] GET /api/auth/login", transactionId);
+        log.info("[Transaction: {}] POST /api/auth/login - user: {}", transactionId, request.username());
 
-        boolean authenticated = authService.login(request);
+        AuthDTO.Response.Login response = authService.login(request);
 
-        if (!authenticated) {
-            log.warn("[Transaction: {}] Response: 401 Unauthorized", transactionId);
-            return ResponseEntity.status(401).build();
-        }
+        log.info("[Transaction: {}] Response: 200 OK - token generated", transactionId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/change-password")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @Operation(summary = "Change password", description = "Changes user password (trainee or trainer). Requires authentication.")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody AuthDTO.Request.ChangePassword request) {
+
+        String transactionId = UUID.randomUUID().toString();
+        log.info("[Transaction: {}] PUT /api/auth/change-password - user: {}", transactionId, request.username());
+
+        authService.changePassword(request);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping(value = "/change-password", consumes = "application/json")
-    @Operation(summary = "Change password", description = "Changes user password (trainee or trainer)")
-    public ResponseEntity<Void> changePassword(@Valid @RequestBody AuthDTO.Request.ChangePassword request) {
+    @PostMapping("/logout")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @Operation(summary = "Logout", description = "Logs out the authenticated user")
+    public ResponseEntity<AuthDTO.Response.Logout> logout(Authentication authentication) {
 
         String transactionId = UUID.randomUUID().toString();
-        log.info("[Transaction: {}] PUT /api/auth/change-password", transactionId);
+        String username = authentication.getName();
+        log.info("[Transaction: {}] POST /api/auth/logout - user: {}", transactionId, username);
 
-        boolean success = authService.changePassword(request);
-
-        if (!success) {
-            log.error("[Transaction: {}] Response: 401 Unauthorized", transactionId);
-            return ResponseEntity.status(401).build();
-        }
+        authService.logout(username);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(new AuthDTO.Response.Logout("Logged out successfully"));
     }
 }
