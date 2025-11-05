@@ -8,7 +8,7 @@ import lombok.experimental.FieldDefaults;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -28,7 +28,7 @@ import java.util.List;
 public class SecurityConfig {
 
     JwtAuthenticationFilter jwtAuthFilter;
-    AuthenticationProvider authenticationProvider;
+    DaoAuthenticationProvider authenticationProvider;
 
     private static final String[] PUBLIC_ROUTES = {
             "/api/trainees/register",

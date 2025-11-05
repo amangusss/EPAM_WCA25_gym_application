@@ -2,6 +2,14 @@ password:
   characters: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
   length: 10
 
+jwt:
+  secret: test-secret-key-for-jwt-token-generation-and-validation-must-be-long-enough-for-tests
+  expiration: 86400000
+
+security:
+  max-login-attempts: 3
+  lockout-duration: 300000
+
 spring:
   datasource:
     url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE

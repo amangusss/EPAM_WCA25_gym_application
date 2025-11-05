@@ -1,8 +1,10 @@
+-- BCrypt hashed passwords (all passwords are 'password123')
+-- You can test login with: username: John.Doe, password: password123
 INSERT INTO users (first_name, last_name, username, password, is_active) VALUES
-    ('John', 'Doe', 'John.Doe', 'password123', true),
-    ('Jane', 'Smith', 'Jane.Smith', 'password123', true),
-    ('Mike', 'Johnson', 'Mike.Johnson', 'password123', true),
-    ('Sarah', 'Williams', 'Sarah.Williams', 'password123', true)
+    ('John', 'Doe', 'John.Doe', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5Tk.dRAC4Gfzi', true),
+    ('Jane', 'Smith', 'Jane.Smith', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5Tk.dRAC4Gfzi', true),
+    ('Mike', 'Johnson', 'Mike.Johnson', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5Tk.dRAC4Gfzi', true),
+    ('Sarah', 'Williams', 'Sarah.Williams', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5Tk.dRAC4Gfzi', true)
 ON CONFLICT (username) DO NOTHING;
 
 INSERT INTO trainers (user_id, specialization_id)

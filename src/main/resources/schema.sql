@@ -49,6 +49,14 @@ CREATE TABLE IF NOT EXISTS trainings (
     CONSTRAINT fk_training_trainee FOREIGN KEY (trainee_id) REFERENCES trainees(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS login_attempts (
+    id BIGSERIAL PRIMARY KEY,
+    username VARCHAR(100) NOT NULL,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    last_attempt_time TIMESTAMP NOT NULL,
+    locked_until TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);
 CREATE INDEX IF NOT EXISTS idx_trainers_user ON trainers(user_id);
@@ -56,3 +64,4 @@ CREATE INDEX IF NOT EXISTS idx_trainees_user ON trainees(user_id);
 CREATE INDEX IF NOT EXISTS idx_trainings_date ON trainings(training_date);
 CREATE INDEX IF NOT EXISTS idx_trainings_trainer ON trainings(trainer_id);
 CREATE INDEX IF NOT EXISTS idx_trainings_trainee ON trainings(trainee_id);
+CREATE INDEX IF NOT EXISTS idx_login_attempts_username ON login_attempts(username);
