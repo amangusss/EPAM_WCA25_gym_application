@@ -1,7 +1,7 @@
 package com.github.amangusss.gym_application.entity.trainer;
 
+import com.github.amangusss.gym_application.entity.CustomUser;
 import com.github.amangusss.gym_application.entity.TrainingType;
-import com.github.amangusss.gym_application.entity.User;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
 import com.github.amangusss.gym_application.entity.training.Training;
 
@@ -45,7 +45,7 @@ public class Trainer {
 
     @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
-    private User user;
+    private CustomUser user;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "specialization_id", nullable = false)

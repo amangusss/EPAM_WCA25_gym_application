@@ -1,22 +1,33 @@
 package com.github.amangusss.gym_application.controller;
 
 import com.github.amangusss.gym_application.dto.trainingtype.TrainingTypeDTO;
+import com.github.amangusss.gym_application.exception.GlobalExceptionHandler;
+import com.github.amangusss.gym_application.jwt.JwtUtils;
 import com.github.amangusss.gym_application.metrics.ApiPerformanceMetrics;
+import com.github.amangusss.gym_application.metrics.MetricsExecutor;
 import com.github.amangusss.gym_application.metrics.TrainingTypeMetrics;
+import com.github.amangusss.gym_application.service.BruteForceProtectionService;
 import com.github.amangusss.gym_application.service.TrainingTypeService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -25,8 +36,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 
-@WebMvcTest(TrainingTypeController.class)
+@WebMvcTest(
+        controllers = TrainingTypeController.class,
+        excludeAutoConfiguration = {
+                SecurityAutoConfiguration.class,
+                SecurityFilterAutoConfiguration.class,
+                UserDetailsServiceAutoConfiguration.class
+        }
+)
+@Import(GlobalExceptionHandler.class)
+@AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
 @DisplayName("TrainingTypeController Tests")
 class TrainingTypeControllerTest {
 
@@ -46,15 +69,33 @@ class TrainingTypeControllerTest {
     @MockitoBean
     private TrainingTypeService trainingTypeService;
 
+    @MockitoBean(name = "jwtUtils")
+    private JwtUtils jwtUtils;
+
+    @MockitoBean(name = "customUserDetailsService")
+    private UserDetailsService userDetailsService;
+
+    @MockitoBean(name = "bruteForceProtectionService")
+    private BruteForceProtectionService bruteForceProtectionService;
+
     @MockitoBean
     private TrainingTypeMetrics trainingTypeMetrics;
 
     @MockitoBean
     private ApiPerformanceMetrics apiPerformanceMetrics;
 
+    @MockitoBean
+    private MetricsExecutor metricsExecutor;
+
     @BeforeEach
     void setUp() {
-        reset(trainingTypeService, trainingTypeMetrics, apiPerformanceMetrics);
+        reset(trainingTypeService, trainingTypeMetrics, apiPerformanceMetrics, metricsExecutor);
+
+        when(metricsExecutor.executeWithMetrics(any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(1);
+                    return supplier.get();
+                });
     }
 
     @Test

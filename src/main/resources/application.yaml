@@ -2,6 +2,14 @@ password:
   characters: ${PASSWORD_CHARACTERS:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789}
   length: ${PASSWORD_LENGTH:10}
 
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+security:
+  max-login-attempts: ${MAX_LOGIN_ATTEMPTS:3}
+  lockout-duration: ${LOCKOUT_DURATION_MS:300000}
+
 spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
@@ -22,6 +30,7 @@ spring:
         format_sql: false
         use_sql_comments: false
         generate_statistics: false
+    open-in-view: false
 
   sql:
     init:
@@ -34,22 +43,24 @@ spring:
 logging:
   level:
     org.springframework: INFO
+    org.springframework.security.config.annotation.authentication.configuration: ERROR
     com.github.amangusss: DEBUG
+    com.zaxxer.hikari: WARN
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: "*"
       base-path: /actuator
   endpoint:
     health:
       show-details: always
       show-components: always
     metrics:
-      enabled: true
+      access: unrestricted
     prometheus:
-      enabled: true
+      access: unrestricted
   metrics:
     tags:
       application: gym-application

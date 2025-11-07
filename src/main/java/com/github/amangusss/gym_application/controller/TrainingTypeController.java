@@ -1,11 +1,10 @@
 package com.github.amangusss.gym_application.controller;
 
 import com.github.amangusss.gym_application.dto.trainingtype.TrainingTypeDTO;
-import com.github.amangusss.gym_application.metrics.ApiPerformanceMetrics;
+import com.github.amangusss.gym_application.metrics.MetricsExecutor;
 import com.github.amangusss.gym_application.metrics.TrainingTypeMetrics;
 import com.github.amangusss.gym_application.service.TrainingTypeService;
 
-import io.micrometer.core.instrument.Timer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -32,32 +31,26 @@ public class TrainingTypeController {
 
     TrainingTypeService trainingTypeService;
     TrainingTypeMetrics trainingTypeMetrics;
-    ApiPerformanceMetrics apiPerformanceMetrics;
+    MetricsExecutor metricsExecutor;
 
     @GetMapping(produces = "application/json")
     @Operation(summary = "Get training types", description = "Retrieves all available training types")
     public ResponseEntity<List<TrainingTypeDTO.Response.TrainingType>> getAllTrainingTypes() {
-
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] GET /api/training-types", transactionId);
 
-        Timer.Sample sample = apiPerformanceMetrics.startTimer();
-        apiPerformanceMetrics.recordRequest("/api/training-types", "GET");
+        List<TrainingTypeDTO.Response.TrainingType> response = metricsExecutor.executeWithMetrics(
+                MetricsExecutor.MetricsContext.builder()
+                        .operation("get_training_types")
+                        .endpoint("/api/training-types")
+                        .method("GET")
+                        .build(),
+                () -> trainingTypeService.getAllTrainingTypes(),
+                result -> trainingTypeMetrics.incrementTrainingTypeQuery(),
+                null
+        );
 
-        try {
-            List<TrainingTypeDTO.Response.TrainingType> response = trainingTypeService.getAllTrainingTypes();
-
-            trainingTypeMetrics.incrementTrainingTypeQuery();
-
-            apiPerformanceMetrics.stopTimerSuccess(sample, "get_training_types", "/api/training-types", "GET");
-            apiPerformanceMetrics.recordResponse("/api/training-types", "GET", 200);
-
-            log.info("[Transaction: {}] Response: 200 OK", transactionId);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            apiPerformanceMetrics.stopTimerFailure(sample, "get_training_types", "/api/training-types", "GET");
-            apiPerformanceMetrics.recordResponse("/api/training-types", "GET", 500);
-            throw e;
-        }
+        log.info("[Transaction: {}] Response: 200 OK", transactionId);
+        return ResponseEntity.ok(response);
     }
 }

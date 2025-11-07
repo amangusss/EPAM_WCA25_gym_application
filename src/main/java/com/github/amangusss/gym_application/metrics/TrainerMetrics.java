@@ -17,7 +17,7 @@ public class TrainerMetrics {
     MeterRegistry meterRegistry;
     Counter trainerRegisteredCounter;
     Counter trainerUpdatedCounter;
-    Counter trainerOperationsCounter;
+    Counter totalOperationsCounter;
 
     public TrainerMetrics(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
@@ -36,9 +36,8 @@ public class TrainerMetrics {
                 .tag("operation", "update")
                 .register(meterRegistry);
 
-        this.trainerOperationsCounter = Counter.builder("trainer.operations.total")
-                .description("Total number of trainer operations")
-                .tag("type", "trainer")
+        this.totalOperationsCounter = Counter.builder("trainer.operations.total")
+                .description("Total trainer operations counter (success + failure)")
                 .register(meterRegistry);
 
         log.info("Trainer metrics initialized");
@@ -46,13 +45,13 @@ public class TrainerMetrics {
 
     public void incrementTrainerRegistered() {
         trainerRegisteredCounter.increment();
-        trainerOperationsCounter.increment();
+        totalOperationsCounter.increment();
         log.debug("Trainer registered counter incremented");
     }
 
     public void incrementTrainerUpdated() {
         trainerUpdatedCounter.increment();
-        trainerOperationsCounter.increment();
+        totalOperationsCounter.increment();
         log.debug("Trainer updated counter incremented");
     }
 
@@ -64,8 +63,8 @@ public class TrainerMetrics {
                 .tag("operation", operation)
                 .register(meterRegistry)
                 .increment();
+        totalOperationsCounter.increment();
 
-        trainerOperationsCounter.increment();
         log.debug("Trainer {} operation failed counter incremented", operation);
     }
 

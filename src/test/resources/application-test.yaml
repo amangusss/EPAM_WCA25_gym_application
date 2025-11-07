@@ -1,36 +1,31 @@
-password:
-  characters: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
-  length: 10
-
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
     username: sa
     password:
-    driver-class-name: org.h2.Driver
-
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
     show-sql: false
     properties:
       hibernate:
-        format_sql: false
+        format_sql: true
     defer-datasource-initialization: true
-
-  h2:
-    console:
-      enabled: false
-
   sql:
     init:
       mode: always
-      data-locations: classpath:data.sql
-      continue-on-error: false
+      data-locations: classpath:data-test.sql
 
 logging:
   level:
-    org.springframework: WARN
-    com.github.amangusss: INFO
-    org.hibernate: WARN
+    com.github.amangusss.gym_application: DEBUG
+    org.hibernate.SQL: DEBUG
+
+# Provide placeholders expected by application.yaml
+JWT_SECRET: "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+JWT_EXPIRATION: 3600000
+
+jwt:
+  secret: "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+  expiration: 3600000

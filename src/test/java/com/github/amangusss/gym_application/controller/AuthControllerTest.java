@@ -1,30 +1,53 @@
 package com.github.amangusss.gym_application.controller;
 
 import com.github.amangusss.gym_application.dto.auth.AuthDTO;
+import com.github.amangusss.gym_application.exception.GlobalExceptionHandler;
+import com.github.amangusss.gym_application.jwt.JwtUtils;
 import com.github.amangusss.gym_application.service.AuthService;
+import com.github.amangusss.gym_application.service.BruteForceProtectionService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(AuthController.class)
+@WebMvcTest(
+        controllers = AuthController.class,
+        excludeAutoConfiguration = {
+                SecurityAutoConfiguration.class,
+                SecurityFilterAutoConfiguration.class,
+                UserDetailsServiceAutoConfiguration.class
+        }
+)
+@Import(GlobalExceptionHandler.class)
+@AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
 @DisplayName("AuthController Tests")
 class AuthControllerTest {
 
@@ -45,6 +68,15 @@ class AuthControllerTest {
     @MockitoBean
     private AuthService authService;
 
+    @MockitoBean(name = "jwtUtils")
+    private JwtUtils jwtUtils;
+
+    @MockitoBean(name = "customUserDetailsService")
+    private UserDetailsService userDetailsService;
+
+    @MockitoBean(name = "bruteForceProtectionService")
+    private BruteForceProtectionService bruteForceProtectionService;
+
     @BeforeEach
     void setUp() {
         reset(authService);
@@ -53,25 +85,26 @@ class AuthControllerTest {
     @Test
     @DisplayName("Should return 200 OK when login with valid credentials")
     void shouldReturnOkWhenLoginWithValidCredentials() throws Exception {
-        AuthDTO.Request.Login expectedLoginRequest = createLoginRequest();
-        when(authService.login(expectedLoginRequest)).thenReturn(true);
+        AuthDTO.Response.Login loginResponse = new AuthDTO.Response.Login("mock-jwt-token", VALID_USERNAME);
+        when(authService.login(any(AuthDTO.Request.Login.class))).thenReturn(loginResponse);
 
-        mockMvc.perform(get(LOGIN_ENDPOINT)
-                        .param("username", VALID_USERNAME)
-                        .param("password", VALID_PASSWORD))
+        mockMvc.perform(post(LOGIN_ENDPOINT)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createLoginRequest())))
                 .andExpect(status().isOk());
 
-        verify(authService, times(1)).login(expectedLoginRequest);
+        verify(authService, times(1)).login(any(AuthDTO.Request.Login.class));
     }
 
     @Test
     @DisplayName("Should return 401 Unauthorized when login with invalid credentials")
     void shouldReturnUnauthorizedWhenLoginWithInvalidCredentials() throws Exception {
-        when(authService.login(any(AuthDTO.Request.Login.class))).thenReturn(false);
+        when(authService.login(any(AuthDTO.Request.Login.class)))
+                .thenThrow(new BadCredentialsException("Invalid credentials"));
 
-        mockMvc.perform(get(LOGIN_ENDPOINT)
-                        .param("username", VALID_USERNAME)
-                        .param("password", INVALID_PASSWORD))
+        mockMvc.perform(post(LOGIN_ENDPOINT)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createLoginRequest())))
                 .andExpect(status().isUnauthorized());
 
         verify(authService, times(1)).login(any(AuthDTO.Request.Login.class));
@@ -82,7 +115,6 @@ class AuthControllerTest {
     void shouldReturnOkWhenPasswordChangedSuccessfully() throws Exception {
         AuthDTO.Request.ChangePassword changePasswordRequest =
                 createChangePasswordRequest(OLD_PASSWORD);
-        when(authService.changePassword(any(AuthDTO.Request.ChangePassword.class))).thenReturn(true);
 
         mockMvc.perform(put(CHANGE_PASSWORD_ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -97,7 +129,9 @@ class AuthControllerTest {
     void shouldReturnUnauthorizedWhenPasswordChangeFails() throws Exception {
         AuthDTO.Request.ChangePassword changePasswordRequest =
                 createChangePasswordRequest(INVALID_PASSWORD);
-        when(authService.changePassword(any(AuthDTO.Request.ChangePassword.class))).thenReturn(false);
+
+        doThrow(new BadCredentialsException("Invalid old password"))
+                .when(authService).changePassword(any(AuthDTO.Request.ChangePassword.class));
 
         mockMvc.perform(put(CHANGE_PASSWORD_ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -112,11 +146,12 @@ class AuthControllerTest {
     void shouldPassCorrectCredentialsToServiceOnLogin() throws Exception {
         ArgumentCaptor<AuthDTO.Request.Login> loginCaptor =
                 ArgumentCaptor.forClass(AuthDTO.Request.Login.class);
-        when(authService.login(any(AuthDTO.Request.Login.class))).thenReturn(true);
+        AuthDTO.Response.Login loginResponse = new AuthDTO.Response.Login("mock-jwt-token", VALID_USERNAME);
+        when(authService.login(any(AuthDTO.Request.Login.class))).thenReturn(loginResponse);
 
-        mockMvc.perform(get(LOGIN_ENDPOINT)
-                        .param("username", VALID_USERNAME)
-                        .param("password", VALID_PASSWORD))
+        mockMvc.perform(post(LOGIN_ENDPOINT)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createLoginRequest())))
                 .andExpect(status().isOk());
 
         verify(authService, times(1)).login(loginCaptor.capture());
@@ -129,10 +164,10 @@ class AuthControllerTest {
     }
 
     private AuthDTO.Request.Login createLoginRequest() {
-        return new AuthDTO.Request.Login(AuthControllerTest.VALID_USERNAME, AuthControllerTest.VALID_PASSWORD);
+        return new AuthDTO.Request.Login(VALID_USERNAME, VALID_PASSWORD);
     }
 
     private AuthDTO.Request.ChangePassword createChangePasswordRequest(String oldPassword) {
-        return new AuthDTO.Request.ChangePassword(AuthControllerTest.VALID_USERNAME, oldPassword, AuthControllerTest.NEW_PASSWORD);
+        return new AuthDTO.Request.ChangePassword(VALID_USERNAME, oldPassword, NEW_PASSWORD);
     }
 }

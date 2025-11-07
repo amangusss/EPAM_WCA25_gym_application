@@ -30,12 +30,10 @@ public class TraineeDTO {
         ) {}
 
         public record UpdateStatus(
-                @NotBlank String username,
                 @NotNull Boolean isActive
         ) {}
 
         public record UpdateTrainers(
-                @NotBlank String traineeUsername,
                 @NotNull List<String> trainerUsernames
         ) {}
     }

@@ -1,16 +1,16 @@
 package com.github.amangusss.gym_application.repository;
 
 import com.github.amangusss.gym_application.entity.TrainingType;
-import com.github.amangusss.gym_application.entity.User;
+import com.github.amangusss.gym_application.entity.CustomUser;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.training.Training;
-import org.assertj.core.api.Assertions;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
+
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -18,6 +18,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("TrainingRepository Tests")
@@ -58,7 +65,7 @@ class TrainingRepositoryTest {
                 .typeName(TRAINING_TYPE_NAME)
                 .build();
 
-        User traineeUser = User.builder()
+        CustomUser traineeUser = CustomUser.builder()
                 .id(TRAINEE_USER_ID)
                 .firstName(TRAINEE_FIRST_NAME)
                 .lastName(TRAINEE_LAST_NAME)
@@ -74,7 +81,7 @@ class TrainingRepositoryTest {
                 .address(TRAINEE_ADDRESS)
                 .build();
 
-        User trainerUser = User.builder()
+        CustomUser trainerUser = CustomUser.builder()
                 .id(TRAINER_USER_ID)
                 .firstName(TRAINER_FIRST_NAME)
                 .lastName(TRAINER_LAST_NAME)
@@ -103,80 +110,80 @@ class TrainingRepositoryTest {
     @Test
     @DisplayName("Should return saved training when saving")
     void shouldReturnSavedTrainingWhenSaving() {
-        Mockito.when(trainingRepository.save(ArgumentMatchers.any(Training.class)))
+        when(trainingRepository.save(any(Training.class)))
                 .thenReturn(testTraining);
 
         Training saved = trainingRepository.save(testTraining);
 
-        Assertions.assertThat(saved).isNotNull();
-        Assertions.assertThat(saved.getId()).isEqualTo(TRAINING_ID);
-        Assertions.assertThat(saved.getTrainingName()).isEqualTo(TRAINING_NAME);
-        Assertions.assertThat(saved.getTrainingDuration()).isEqualTo(TRAINING_DURATION);
+        assertThat(saved).isNotNull();
+        assertThat(saved.getId()).isEqualTo(TRAINING_ID);
+        assertThat(saved.getTrainingName()).isEqualTo(TRAINING_NAME);
+        assertThat(saved.getTrainingDuration()).isEqualTo(TRAINING_DURATION);
 
-        Mockito.verify(trainingRepository, Mockito.times(1)).save(testTraining);
+        verify(trainingRepository, times(1)).save(testTraining);
     }
 
     @Test
     @DisplayName("Should return list of trainings when finding all")
     void shouldReturnListOfTrainingsWhenFindingAll() {
         List<Training> trainingList = List.of(testTraining);
-        Mockito.when(trainingRepository.findAll()).thenReturn(trainingList);
+        when(trainingRepository.findAll()).thenReturn(trainingList);
 
         List<Training> result = trainingRepository.findAll();
 
-        Assertions.assertThat(result).isNotEmpty();
-        Assertions.assertThat(result).hasSize(1);
-        Assertions.assertThat(result.get(0).getTrainingName()).isEqualTo(TRAINING_NAME);
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getTrainingName()).isEqualTo(TRAINING_NAME);
 
-        Mockito.verify(trainingRepository, Mockito.times(1)).findAll();
+        verify(trainingRepository, times(1)).findAll();
     }
 
     @Test
     @DisplayName("Should return training when finding by existing ID")
     void shouldReturnTrainingWhenFindingByExistingId() {
-        Mockito.when(trainingRepository.findById(TRAINING_ID))
+        when(trainingRepository.findById(TRAINING_ID))
                 .thenReturn(Optional.of(testTraining));
 
         Optional<Training> result = trainingRepository.findById(TRAINING_ID);
 
-        Assertions.assertThat(result).isPresent();
-        Assertions.assertThat(result.get().getTrainingName()).isEqualTo(TRAINING_NAME);
+        assertThat(result).isPresent();
+        assertThat(result.get().getTrainingName()).isEqualTo(TRAINING_NAME);
 
-        Mockito.verify(trainingRepository, Mockito.times(1)).findById(TRAINING_ID);
+        verify(trainingRepository, times(1)).findById(TRAINING_ID);
     }
 
     @Test
     @DisplayName("Should return empty Optional when training not found by ID")
     void shouldReturnEmptyOptionalWhenTrainingNotFoundById() {
-        Mockito.when(trainingRepository.findById(NON_EXISTENT_ID))
+        when(trainingRepository.findById(NON_EXISTENT_ID))
                 .thenReturn(Optional.empty());
 
         Optional<Training> result = trainingRepository.findById(NON_EXISTENT_ID);
 
-        Assertions.assertThat(result).isEmpty();
+        assertThat(result).isEmpty();
 
-        Mockito.verify(trainingRepository, Mockito.times(1)).findById(NON_EXISTENT_ID);
+        verify(trainingRepository, times(1)).findById(NON_EXISTENT_ID);
     }
 
     @Test
     @DisplayName("Should return true when training exists by ID")
     void shouldReturnTrueWhenTrainingExistsById() {
-        Mockito.when(trainingRepository.existsById(TRAINING_ID)).thenReturn(true);
+        when(trainingRepository.existsById(TRAINING_ID)).thenReturn(true);
 
         boolean exists = trainingRepository.existsById(TRAINING_ID);
 
-        Assertions.assertThat(exists).isTrue();
+        assertThat(exists).isTrue();
 
-        Mockito.verify(trainingRepository, Mockito.times(1)).existsById(TRAINING_ID);
+        verify(trainingRepository, times(1)).existsById(TRAINING_ID);
     }
 
     @Test
     @DisplayName("Should call delete when deleting training")
     void shouldCallDeleteWhenDeletingTraining() {
-        Mockito.doNothing().when(trainingRepository).delete(testTraining);
+        doNothing().when(trainingRepository).delete(testTraining);
 
         trainingRepository.delete(testTraining);
 
-        Mockito.verify(trainingRepository, Mockito.times(1)).delete(testTraining);
+        verify(trainingRepository, times(1)).delete(testTraining);
     }
 }

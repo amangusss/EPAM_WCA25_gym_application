@@ -1,10 +1,12 @@
 package com.github.amangusss.gym_application.integration;
 
+import com.github.amangusss.gym_application.dto.auth.AuthDTO;
 import com.github.amangusss.gym_application.dto.trainee.TraineeDTO;
 import com.github.amangusss.gym_application.dto.trainer.TrainerDTO;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,11 +17,11 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -39,6 +41,25 @@ class TrainingIntegrationTest {
     @BeforeEach
     void setUp() {
         baseUrl = "http://localhost:" + port;
+    }
+
+    private String getJwtToken(String username, String password) {
+        AuthDTO.Request.Login loginRequest = new AuthDTO.Request.Login(username, password);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<AuthDTO.Request.Login> entity = new HttpEntity<>(loginRequest, headers);
+        ResponseEntity<AuthDTO.Response.Login> response = restTemplate.postForEntity(
+                baseUrl + "/api/auth/login", entity, AuthDTO.Response.Login.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        return response.getBody().token();
+    }
+
+    private HttpHeaders authHeaders(String token) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+        return headers;
     }
 
     @Test
@@ -82,7 +103,11 @@ class TrainingIntegrationTest {
         assertThat(trainerResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         TrainerDTO.Response.Registered trainer = trainerResponse.getBody();
         assertThat(trainer).isNotNull();
-        System.out.println("Created trainer: " + trainer.username());
+
+        String traineeJwt = getJwtToken(trainee.username(), trainee.password());
+        String trainerJwt = getJwtToken(trainer.username(), trainer.password());
+        HttpHeaders traineeAuth = authHeaders(traineeJwt);
+        HttpHeaders trainerAuth = authHeaders(trainerJwt);
 
         TrainingDTO.Request.Create trainingRequest = new TrainingDTO.Request.Create(
                 trainee.username(),
@@ -92,7 +117,7 @@ class TrainingIntegrationTest {
                 60
         );
 
-        HttpEntity<TrainingDTO.Request.Create> trainingEntity = new HttpEntity<>(trainingRequest, headers);
+        HttpEntity<TrainingDTO.Request.Create> trainingEntity = new HttpEntity<>(trainingRequest, trainerAuth);
         ResponseEntity<Void> trainingCreateResponse = restTemplate.postForEntity(
                 baseUrl + "/api/trainings",
                 trainingEntity,
@@ -100,15 +125,12 @@ class TrainingIntegrationTest {
         );
 
         assertThat(trainingCreateResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        System.out.println("Created training session");
 
-        String traineeTrainingsUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + "/api/trainees/{username}/trainings")
-                .queryParam("password", trainee.password())
-                .buildAndExpand(trainee.username())
-                .toUriString();
-
-        ResponseEntity<TrainingDTO.Response.TraineeTraining[]> traineeTrainingsResponse = restTemplate.getForEntity(
+        String traineeTrainingsUrl = baseUrl + "/api/trainees/" + trainee.username() + "/trainings";
+        ResponseEntity<TrainingDTO.Response.TraineeTraining[]> traineeTrainingsResponse = restTemplate.exchange(
                 traineeTrainingsUrl,
+                HttpMethod.GET,
+                new HttpEntity<>(traineeAuth),
                 TrainingDTO.Response.TraineeTraining[].class
         );
 
@@ -120,13 +142,11 @@ class TrainingIntegrationTest {
         assertThat(traineeTrainings[0].trainingDuration()).isEqualTo(60);
         System.out.println("Retrieved trainee's trainings");
 
-        String trainerTrainingsUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + "/api/trainers/{username}/trainings")
-                .queryParam("password", trainer.password())
-                .buildAndExpand(trainer.username())
-                .toUriString();
-
-        ResponseEntity<TrainingDTO.Response.TrainerTraining[]> trainerTrainingsResponse = restTemplate.getForEntity(
+        String trainerTrainingsUrl = baseUrl + "/api/trainers/" + trainer.username() + "/trainings";
+        ResponseEntity<TrainingDTO.Response.TrainerTraining[]> trainerTrainingsResponse = restTemplate.exchange(
                 trainerTrainingsUrl,
+                HttpMethod.GET,
+                new HttpEntity<>(trainerAuth),
                 TrainingDTO.Response.TrainerTraining[].class
         );
 
@@ -142,8 +162,28 @@ class TrainingIntegrationTest {
     @Test
     @DisplayName("Integration Test: Get Training Types")
     void shouldGetAllTrainingTypes() {
-        ResponseEntity<Object[]> response = restTemplate.getForEntity(
+        TraineeDTO.Request.Register traineeRequest = new TraineeDTO.Request.Register(
+                "Types",
+                "Reader",
+                LocalDate.of(1990, 1, 1),
+                "Addr"
+        );
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<TraineeDTO.Response.Registered> traineeResponse = restTemplate.postForEntity(
+                baseUrl + "/api/trainees/register",
+                new HttpEntity<>(traineeRequest, headers),
+                TraineeDTO.Response.Registered.class
+        );
+        assertThat(traineeResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertNotNull(traineeResponse.getBody());
+        String jwt = getJwtToken(traineeResponse.getBody().username(), traineeResponse.getBody().password());
+        HttpHeaders auth = authHeaders(jwt);
+
+        ResponseEntity<Object[]> response = restTemplate.exchange(
                 baseUrl + "/api/training-types",
+                HttpMethod.GET,
+                new HttpEntity<>(auth),
                 Object[].class
         );
 

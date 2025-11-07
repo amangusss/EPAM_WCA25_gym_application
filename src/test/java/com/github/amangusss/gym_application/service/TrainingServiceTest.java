@@ -1,8 +1,8 @@
 package com.github.amangusss.gym_application.service;
 
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
+import com.github.amangusss.gym_application.entity.CustomUser;
 import com.github.amangusss.gym_application.entity.TrainingType;
-import com.github.amangusss.gym_application.entity.User;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
 import com.github.amangusss.gym_application.entity.training.Training;
@@ -13,14 +13,13 @@ import com.github.amangusss.gym_application.repository.TraineeRepository;
 import com.github.amangusss.gym_application.repository.TrainerRepository;
 import com.github.amangusss.gym_application.repository.TrainingRepository;
 import com.github.amangusss.gym_application.service.impl.TrainingServiceImpl;
-import com.github.amangusss.gym_application.validation.training.TrainingEntityValidation;
+import com.github.amangusss.gym_application.validation.entity.EntityValidator;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
+
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -28,6 +27,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.Optional;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("TrainingService Tests")
@@ -64,27 +72,26 @@ class TrainingServiceTest {
     private TrainerRepository trainerRepository;
 
     @Mock
-    private TrainingEntityValidation trainingEntityValidation;
+    private EntityValidator entityValidator;
 
     @InjectMocks
     private TrainingServiceImpl trainingService;
 
     private Training testTraining;
-    private TrainingType testTrainingType;
     private Trainee testTrainee;
     private Trainer testTrainer;
     private TrainingDTO.Request.Create createRequest;
 
     @BeforeEach
     void setUp() {
-        Mockito.reset(trainingRepository, traineeRepository, trainerRepository, trainingEntityValidation);
+        Mockito.reset(trainingRepository, traineeRepository, trainerRepository, entityValidator);
 
-        testTrainingType = TrainingType.builder()
+        TrainingType testTrainingType = TrainingType.builder()
                 .id(TRAINING_TYPE_ID)
                 .typeName(TRAINING_TYPE_NAME)
                 .build();
 
-        User traineeUser = User.builder()
+        CustomUser traineeUser = CustomUser.builder()
                 .id(TRAINEE_USER_ID)
                 .firstName(TRAINEE_FIRST_NAME)
                 .lastName(TRAINEE_LAST_NAME)
@@ -100,7 +107,7 @@ class TrainingServiceTest {
                 .address(TRAINEE_ADDRESS)
                 .build();
 
-        User trainerUser = User.builder()
+        CustomUser trainerUser = CustomUser.builder()
                 .id(TRAINER_USER_ID)
                 .firstName(TRAINER_FIRST_NAME)
                 .lastName(TRAINER_LAST_NAME)
@@ -133,61 +140,61 @@ class TrainingServiceTest {
     @Test
     @DisplayName("Should add training successfully when training data is valid")
     void shouldAddTrainingSuccessfullyWhenTrainingDataIsValid() {
-        Mockito.when(traineeRepository.findByUserUsername(TRAINEE_USERNAME))
+        when(traineeRepository.findByUserUsername(TRAINEE_USERNAME))
                 .thenReturn(Optional.of(testTrainee));
-        Mockito.when(trainerRepository.findByUserUsername(TRAINER_USERNAME))
+        when(trainerRepository.findByUserUsername(TRAINER_USERNAME))
                 .thenReturn(Optional.of(testTrainer));
-        Mockito.doNothing().when(trainingEntityValidation).validateTrainingForAddition(ArgumentMatchers.any());
-        Mockito.when(trainingRepository.save(ArgumentMatchers.any(Training.class))).thenReturn(testTraining);
+        doNothing().when(entityValidator).validateTraining(any());
+        when(trainingRepository.save(any(Training.class))).thenReturn(testTraining);
 
         trainingService.addTraining(createRequest);
 
-        Mockito.verify(trainingEntityValidation, Mockito.times(1)).validateTrainingForAddition(ArgumentMatchers.any());
-        Mockito.verify(trainingRepository, Mockito.times(1)).save(ArgumentMatchers.any(Training.class));
+        verify(entityValidator, times(1)).validateTraining(any());
+        verify(trainingRepository, times(1)).save(any(Training.class));
     }
 
     @Test
     @DisplayName("Should throw TraineeNotFoundException when trainee not found")
     void shouldThrowTraineeNotFoundExceptionWhenTraineeNotFound() {
-        Mockito.when(traineeRepository.findByUserUsername(TRAINEE_USERNAME))
+        when(traineeRepository.findByUserUsername(TRAINEE_USERNAME))
                 .thenReturn(Optional.empty());
 
-        Assertions.assertThatThrownBy(() -> trainingService.addTraining(createRequest))
+        assertThatThrownBy(() -> trainingService.addTraining(createRequest))
                 .isInstanceOf(TraineeNotFoundException.class)
                 .hasMessageContaining("Trainee not found: " + TRAINEE_USERNAME);
 
-        Mockito.verify(trainingRepository, Mockito.never()).save(ArgumentMatchers.any());
+        verify(trainingRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("Should throw TrainerNotFoundException when trainer not found")
     void shouldThrowTrainerNotFoundExceptionWhenTrainerNotFound() {
-        Mockito.when(traineeRepository.findByUserUsername(TRAINEE_USERNAME))
+        when(traineeRepository.findByUserUsername(TRAINEE_USERNAME))
                 .thenReturn(Optional.of(testTrainee));
-        Mockito.when(trainerRepository.findByUserUsername(TRAINER_USERNAME))
+        when(trainerRepository.findByUserUsername(TRAINER_USERNAME))
                 .thenReturn(Optional.empty());
 
-        Assertions.assertThatThrownBy(() -> trainingService.addTraining(createRequest))
+        assertThatThrownBy(() -> trainingService.addTraining(createRequest))
                 .isInstanceOf(TrainerNotFoundException.class)
                 .hasMessageContaining("Trainer not found: " + TRAINER_USERNAME);
 
-        Mockito.verify(trainingRepository, Mockito.never()).save(ArgumentMatchers.any());
+        verify(trainingRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("Should throw ValidationException when training data is invalid")
     void shouldThrowValidationExceptionWhenTrainingDataIsInvalid() {
-        Mockito.when(traineeRepository.findByUserUsername(TRAINEE_USERNAME))
+        when(traineeRepository.findByUserUsername(TRAINEE_USERNAME))
                 .thenReturn(Optional.of(testTrainee));
-        Mockito.when(trainerRepository.findByUserUsername(TRAINER_USERNAME))
+        when(trainerRepository.findByUserUsername(TRAINER_USERNAME))
                 .thenReturn(Optional.of(testTrainer));
-        Mockito.doThrow(new ValidationException(NULL_TRAINING_ERROR))
-                .when(trainingEntityValidation).validateTrainingForAddition(ArgumentMatchers.any());
+        doThrow(new ValidationException(NULL_TRAINING_ERROR))
+                .when(entityValidator).validateTraining(any());
 
-        Assertions.assertThatThrownBy(() -> trainingService.addTraining(createRequest))
+        assertThatThrownBy(() -> trainingService.addTraining(createRequest))
                 .isInstanceOf(ValidationException.class);
 
-        Mockito.verify(trainingEntityValidation, Mockito.times(1)).validateTrainingForAddition(ArgumentMatchers.any());
-        Mockito.verify(trainingRepository, Mockito.never()).save(ArgumentMatchers.any());
+        verify(entityValidator, times(1)).validateTraining(any());
+        verify(trainingRepository, never()).save(any());
     }
 }
