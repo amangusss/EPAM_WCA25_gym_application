@@ -14,7 +14,7 @@ import com.github.amangusss.gym_application.service.TrainerService;
 import com.github.amangusss.gym_application.service.TrainingTypeService;
 import com.github.amangusss.gym_application.util.credentials.PasswordGenerator;
 import com.github.amangusss.gym_application.util.credentials.UsernameGenerator;
-import com.github.amangusss.gym_application.validation.entity.impl.EntityValidatorImpl;
+import com.github.amangusss.gym_application.validation.entity.EntityValidator;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ public class TrainerServiceImpl implements TrainerService {
     UserRepository userRepository;
     UsernameGenerator usernameGenerator;
     PasswordGenerator passwordGenerator;
-    EntityValidatorImpl entityValidator;
+    EntityValidator entityValidator;
     TrainerMapper trainerMapper;
     TrainingMapper trainingMapper;
     TrainingTypeService trainingTypeService;

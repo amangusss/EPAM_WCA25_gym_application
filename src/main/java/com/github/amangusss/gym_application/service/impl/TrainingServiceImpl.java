@@ -10,7 +10,7 @@ import com.github.amangusss.gym_application.repository.TraineeRepository;
 import com.github.amangusss.gym_application.repository.TrainerRepository;
 import com.github.amangusss.gym_application.repository.TrainingRepository;
 import com.github.amangusss.gym_application.service.TrainingService;
-import com.github.amangusss.gym_application.validation.entity.impl.EntityValidatorImpl;
+import com.github.amangusss.gym_application.validation.entity.EntityValidator;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ public class TrainingServiceImpl implements TrainingService {
     TrainingRepository trainingRepository;
     TraineeRepository traineeRepository;
     TrainerRepository trainerRepository;
-    EntityValidatorImpl entityValidator;
+    EntityValidator entityValidator;
 
     @Override
     public void addTraining(TrainingDTO.Request.Create request) {

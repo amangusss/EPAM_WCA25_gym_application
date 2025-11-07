@@ -19,6 +19,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.web.util.UriComponentsBuilder.fromHttpUrl;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -38,6 +39,31 @@ class TraineeIntegrationTest {
     @BeforeEach
     void setUp() {
         baseUrl = "http://localhost:" + port;
+    }
+
+    private String getJwtToken(String username, String password) {
+        AuthDTO.Request.Login loginRequest = new AuthDTO.Request.Login(username, password);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<AuthDTO.Request.Login> loginEntity = new HttpEntity<>(loginRequest, headers);
+
+        ResponseEntity<AuthDTO.Response.Login> loginResponse = restTemplate.postForEntity(
+                baseUrl + "/api/auth/login",
+                loginEntity,
+                AuthDTO.Response.Login.class
+        );
+
+        assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(loginResponse.getBody()).isNotNull();
+        return loginResponse.getBody().token();
+    }
+
+    private HttpHeaders createAuthHeaders(String jwtToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + jwtToken);
+        return headers;
     }
 
     @Test
@@ -68,15 +94,19 @@ class TraineeIntegrationTest {
 
         String createdUsername = registered.username();
         String createdPassword = registered.password();
-        System.out.println("Created trainee: " + createdUsername);
 
-        String getProfileUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + "/api/trainees/{username}")
+        String jwtToken = getJwtToken(createdUsername, createdPassword);
+        HttpHeaders authHeaders = createAuthHeaders(jwtToken);
+
+        String getProfileUrl = fromHttpUrl(baseUrl + "/api/trainees/{username}")
                 .queryParam("password", createdPassword)
                 .buildAndExpand(createdUsername)
                 .toUriString();
 
-        ResponseEntity<TraineeDTO.Response.Profile> profileResponse = restTemplate.getForEntity(
+        ResponseEntity<TraineeDTO.Response.Profile> profileResponse = restTemplate.exchange(
                 getProfileUrl,
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders),
                 TraineeDTO.Response.Profile.class
         );
 
@@ -88,7 +118,6 @@ class TraineeIntegrationTest {
         assertThat(profile.dateOfBirth()).isEqualTo(LocalDate.of(1990, 1, 1));
         assertThat(profile.address()).isEqualTo("123 Main Street");
         assertThat(profile.isActive()).isTrue();
-        System.out.println("Retrieved trainee profile successfully");
 
         TraineeDTO.Request.Update updateRequest = new TraineeDTO.Request.Update(
                 "Johnny",
@@ -98,12 +127,12 @@ class TraineeIntegrationTest {
                 true
         );
 
-        String updateUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + "/api/trainees/{username}")
+        String updateUrl = fromHttpUrl(baseUrl + "/api/trainees/{username}")
                 .queryParam("password", createdPassword)
                 .buildAndExpand(createdUsername)
                 .toUriString();
 
-        HttpEntity<TraineeDTO.Request.Update> updateEntity = new HttpEntity<>(updateRequest, headers);
+        HttpEntity<TraineeDTO.Request.Update> updateEntity = new HttpEntity<>(updateRequest, authHeaders);
         ResponseEntity<TraineeDTO.Response.Profile> updateResponse = restTemplate.exchange(
                 updateUrl,
                 HttpMethod.PUT,
@@ -116,9 +145,8 @@ class TraineeIntegrationTest {
         assertThat(updatedProfile).isNotNull();
         assertThat(updatedProfile.firstName()).isEqualTo("Johnny");
         assertThat(updatedProfile.lastName()).isEqualTo("Doeson");
-        System.out.println("Updated trainee profile successfully");
 
-        String deleteUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + "/api/trainees/{username}")
+        String deleteUrl = fromHttpUrl(baseUrl + "/api/trainees/{username}")
                 .queryParam("password", createdPassword)
                 .buildAndExpand(createdUsername)
                 .toUriString();
@@ -126,16 +154,19 @@ class TraineeIntegrationTest {
         ResponseEntity<Void> deleteResponse = restTemplate.exchange(
                 deleteUrl,
                 HttpMethod.DELETE,
-                new HttpEntity<>(headers),
+                new HttpEntity<>(authHeaders),
                 Void.class
         );
 
         assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        System.out.println("Deleted trainee successfully");
 
-        ResponseEntity<Object> verifyResponse = restTemplate.getForEntity(getProfileUrl, Object.class);
+        ResponseEntity<Object> verifyResponse = restTemplate.exchange(
+                getProfileUrl,
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders),
+                Object.class
+        );
         assertThat(verifyResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        System.out.println("Verified trainee is deleted");
     }
 
     @Test
@@ -164,23 +195,17 @@ class TraineeIntegrationTest {
 
         String username = registered.username();
         String oldPassword = registered.password();
-        System.out.println("Created trainee: " + username);
 
-        String loginUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + "/api/auth/login")
-                .queryParam("username", username)
-                .queryParam("password", oldPassword)
-                .toUriString();
-
-        ResponseEntity<Void> loginResponse = restTemplate.getForEntity(loginUrl, Void.class);
-        assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        System.out.println("Authenticated successfully");
+        String jwtToken = getJwtToken(username, oldPassword);
+        assertThat(jwtToken).isNotNull();
 
         String newPassword = "newSecurePassword123";
         AuthDTO.Request.ChangePassword changePasswordRequest =
                 new AuthDTO.Request.ChangePassword(username, oldPassword, newPassword);
 
+        HttpHeaders authHeaders = createAuthHeaders(jwtToken);
         HttpEntity<AuthDTO.Request.ChangePassword> changePasswordEntity =
-                new HttpEntity<>(changePasswordRequest, headers);
+                new HttpEntity<>(changePasswordRequest, authHeaders);
 
         ResponseEntity<Void> changePasswordResponse = restTemplate.exchange(
                 baseUrl + "/api/auth/change-password",
@@ -190,24 +215,20 @@ class TraineeIntegrationTest {
         );
 
         assertThat(changePasswordResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        System.out.println("Changed password successfully");
 
-        String newLoginUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + "/api/auth/login")
-                .queryParam("username", username)
-                .queryParam("password", newPassword)
-                .toUriString();
+        String newJwtToken = getJwtToken(username, newPassword);
+        assertThat(newJwtToken).isNotNull();
 
-        ResponseEntity<Void> newLoginResponse = restTemplate.getForEntity(newLoginUrl, Void.class);
-        assertThat(newLoginResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        System.out.println("New password works");
-
-        String getProfileUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + "/api/trainees/{username}")
+        String getProfileUrl = fromHttpUrl(baseUrl + "/api/trainees/{username}")
                 .queryParam("password", newPassword)
                 .buildAndExpand(username)
                 .toUriString();
 
-        ResponseEntity<TraineeDTO.Response.Profile> profileResponse = restTemplate.getForEntity(
+        HttpHeaders newAuthHeaders = createAuthHeaders(newJwtToken);
+        ResponseEntity<TraineeDTO.Response.Profile> profileResponse = restTemplate.exchange(
                 getProfileUrl,
+                HttpMethod.GET,
+                new HttpEntity<>(newAuthHeaders),
                 TraineeDTO.Response.Profile.class
         );
 
@@ -216,7 +237,6 @@ class TraineeIntegrationTest {
         assertThat(profile).isNotNull();
         assertThat(profile.firstName()).isEqualTo("Bob");
         assertThat(profile.lastName()).isEqualTo("Wilson");
-        System.out.println("Can access profile with new password");
     }
 
     @Test
@@ -244,12 +264,19 @@ class TraineeIntegrationTest {
         assertThat(trainee).isNotNull();
         System.out.println("Created trainee: " + trainee.username());
 
-        String unassignedUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + "/api/trainees/{username}/trainers/unassigned")
-                .queryParam("password", trainee.password())
+        String jwtToken = getJwtToken(trainee.username(), trainee.password());
+        HttpHeaders authHeaders = createAuthHeaders(jwtToken);
+
+        String unassignedUrl = fromHttpUrl(baseUrl + "/api/trainees/{username}/trainers/unassigned")
                 .buildAndExpand(trainee.username())
                 .toUriString();
 
-        ResponseEntity<Object[]> unassignedResponse = restTemplate.getForEntity(unassignedUrl, Object[].class);
+        ResponseEntity<Object[]> unassignedResponse = restTemplate.exchange(
+                unassignedUrl,
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders),
+                Object[].class
+        );
         assertThat(unassignedResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         System.out.println("Retrieved unassigned trainers");
     }

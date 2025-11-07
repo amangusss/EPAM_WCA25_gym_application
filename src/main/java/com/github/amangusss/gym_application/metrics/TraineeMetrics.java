@@ -19,6 +19,7 @@ public class TraineeMetrics {
     Counter traineeRegisteredCounter;
     Counter traineeUpdatedCounter;
     Counter traineeDeletedCounter;
+    Counter totalOperationsCounter;
 
     public TraineeMetrics(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
@@ -44,21 +45,28 @@ public class TraineeMetrics {
                 .tag("operation", "delete")
                 .register(meterRegistry);
 
+        this.totalOperationsCounter = Counter.builder("trainee.operations.total")
+                .description("Total trainee operations counter (success + failure)")
+                .register(meterRegistry);
+
         log.info("Trainee metrics initialized");
     }
 
     public void incrementTraineeRegistered() {
         traineeRegisteredCounter.increment();
+        totalOperationsCounter.increment();
         log.debug("Trainee registered counter incremented");
     }
 
     public void incrementTraineeUpdated() {
         traineeUpdatedCounter.increment();
+        totalOperationsCounter.increment();
         log.debug("Trainee updated counter incremented");
     }
 
     public void incrementTraineeDeleted() {
         traineeDeletedCounter.increment();
+        totalOperationsCounter.increment();
         log.debug("Trainee deleted counter incremented");
     }
 
@@ -70,6 +78,7 @@ public class TraineeMetrics {
                 .tag("operation", operation)
                 .register(meterRegistry)
                 .increment();
+        totalOperationsCounter.increment();
 
         log.debug("Trainee {} operation failed counter incremented", operation);
     }

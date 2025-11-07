@@ -1,5 +1,3 @@
--- BCrypt hashed passwords (all passwords are 'password123')
--- You can test login with: username: John.Doe, password: password123
 INSERT INTO users (first_name, last_name, username, password, is_active) VALUES
     ('John', 'Doe', 'John.Doe', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5Tk.dRAC4Gfzi', true),
     ('Jane', 'Smith', 'Jane.Smith', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5Tk.dRAC4Gfzi', true),

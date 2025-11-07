@@ -19,7 +19,7 @@ import com.github.amangusss.gym_application.repository.UserRepository;
 import com.github.amangusss.gym_application.service.TraineeService;
 import com.github.amangusss.gym_application.util.credentials.PasswordGenerator;
 import com.github.amangusss.gym_application.util.credentials.UsernameGenerator;
-import com.github.amangusss.gym_application.validation.entity.impl.EntityValidatorImpl;
+import com.github.amangusss.gym_application.validation.entity.EntityValidator;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +48,7 @@ public class TraineeServiceImpl implements TraineeService {
     UserRepository userRepository;
     UsernameGenerator usernameGenerator;
     PasswordGenerator passwordGenerator;
-    EntityValidatorImpl entityValidator;
+    EntityValidator entityValidator;
     TraineeMapper traineeMapper;
     TrainerMapper trainerMapper;
     TrainingMapper trainingMapper;
@@ -106,6 +106,8 @@ public class TraineeServiceImpl implements TraineeService {
                 .orElseThrow(() -> new TraineeNotFoundException("Trainee not found with username: " + username));
 
         existingTrainee.getUser().setFirstName(trainee.getUser().getFirstName());
+        existingTrainee.getUser().setLastName(trainee.getUser().getLastName());
+        existingTrainee.getUser().setActive(trainee.getUser().isActive());
         existingTrainee.setDateOfBirth(trainee.getDateOfBirth());
         existingTrainee.setAddress(trainee.getAddress());
 
