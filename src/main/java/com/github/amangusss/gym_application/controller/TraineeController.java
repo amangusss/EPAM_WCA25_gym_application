@@ -3,13 +3,13 @@ package com.github.amangusss.gym_application.controller;
 import com.github.amangusss.gym_application.dto.trainee.TraineeDTO;
 import com.github.amangusss.gym_application.dto.trainer.TrainerDTO;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
-import com.github.amangusss.gym_application.metrics.ApiPerformanceMetrics;
+import com.github.amangusss.gym_application.metrics.MetricsExecutor;
 import com.github.amangusss.gym_application.metrics.TraineeMetrics;
 import com.github.amangusss.gym_application.service.TraineeService;
 
-import io.micrometer.core.instrument.Timer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
@@ -20,6 +20,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -28,7 +30,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -44,7 +45,7 @@ public class TraineeController {
 
     TraineeService traineeService;
     TraineeMetrics traineeMetrics;
-    ApiPerformanceMetrics apiPerformanceMetrics;
+    MetricsExecutor metricsExecutor;
 
     @PostMapping("/register")
     @Operation(summary = "Register new trainee", description = "Creates a new trainee profile and generates username and password")
@@ -54,234 +55,254 @@ public class TraineeController {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] POST /api/trainees/register", transactionId);
 
-        Timer.Sample sample = apiPerformanceMetrics.startTimer();
-        apiPerformanceMetrics.recordRequest("/api/trainees/register", "POST");
+        TraineeDTO.Response.Registered response = metricsExecutor.executeWithMetrics(
+                MetricsExecutor.MetricsContext.builder()
+                        .operation("register_trainee")
+                        .endpoint("/api/trainees/register")
+                        .method("POST")
+                        .build(),
+                () -> traineeService.createTrainee(request),
+                result -> traineeMetrics.incrementTraineeRegistered(),
+                ex -> traineeMetrics.incrementTraineeOperationFailed("register")
+        );
 
-        try {
-            TraineeDTO.Response.Registered response = traineeService.createTrainee(request);
+        log.info("[Transaction: {}] Response: 200 OK", transactionId);
+        return ResponseEntity.ok(response);
+    }
 
-            traineeMetrics.incrementTraineeRegistered();
+    @GetMapping(value = "/profile", produces = "application/json")
+    @Operation(summary = "Get current trainee profile",
+            description = "Retrieves the profile of the currently authenticated trainee. Username is taken from JWT token.",
+            security = @SecurityRequirement(name = "Bearer Authentication"))
+    public ResponseEntity<TraineeDTO.Response.Profile> getCurrentTraineeProfile(
+            Authentication authentication) {
+        String transactionId = UUID.randomUUID().toString();
+        String username = authentication.getName();
+        log.info("[Transaction: {}] GET /api/trainees/profile", transactionId);
 
-            apiPerformanceMetrics.stopTimerSuccess(sample, "register_trainee", "/api/trainees/register", "POST");
-            apiPerformanceMetrics.recordResponse("/api/trainees/register", "POST", 200);
+        TraineeDTO.Response.Profile response = metricsExecutor.executeWithMetrics(
+                MetricsExecutor.MetricsContext.builder()
+                        .operation("get_current_trainer_profile")
+                        .endpoint("/api/trainers/profile")
+                        .method("GET")
+                        .build(),
+                () -> traineeService.getTraineeProfile(username),
+                result -> traineeMetrics.recordTraineeProfileView(username),
+                ex -> traineeMetrics.incrementTraineeOperationFailed("get_profile")
+        );
 
-            log.info("[Transaction: {}] Response: 200 OK", transactionId);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            traineeMetrics.incrementTraineeOperationFailed("register");
-            apiPerformanceMetrics.stopTimerFailure(sample, "register_trainee", "/api/trainees/register", "POST");
-            apiPerformanceMetrics.recordResponse("/api/trainees/register", "POST", 500);
-            throw e;
-        }
+        log.info("[Transaction: {}] Response: 200 OK", transactionId);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping(value = "/{username}", produces = "application/json")
-    @Operation(summary = "Get trainee profile", description = "Retrieves trainee profile by username")
+    @Operation(summary = "Get trainee profile", description = "Retrieves trainee profile by username. Requires JWT authentication.",
+            security = @SecurityRequirement(name = "Bearer Authentication"))
     public ResponseEntity<TraineeDTO.Response.Profile> getTraineeProfile(
             @Parameter(description = "Trainee username") @PathVariable String username,
-            @Parameter(description = "Trainee password") @RequestParam String password) {
+            Authentication authentication) {
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] GET /api/trainees/{}", transactionId, username);
 
-        Timer.Sample sample = apiPerformanceMetrics.startTimer();
-        apiPerformanceMetrics.recordRequest("/api/trainees/" + username, "GET");
-
-        try {
-            TraineeDTO.Response.Profile response = traineeService.findTraineeByUsername(username, password);
-
-            traineeMetrics.recordTraineeProfileView(username);
-
-            apiPerformanceMetrics.stopTimerSuccess(sample, "get_trainee_profile", "/api/trainees/{username}", "GET");
-            apiPerformanceMetrics.recordResponse("/api/trainees/" + username, "GET", 200);
-
-            log.info("[Transaction: {}] Response: 200 OK", transactionId);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            apiPerformanceMetrics.stopTimerFailure(sample, "get_trainee_profile", "/api/trainees/{username}", "GET");
-            apiPerformanceMetrics.recordResponse("/api/trainees/" + username, "GET", 500);
-            throw e;
+        if (!authentication.getName().equals(username)) {
+            log.warn("[Transaction: {}] Access denied: user {} tried to access profile of {}",
+                    transactionId, authentication.getName(), username);
+            throw new AccessDeniedException("Cannot access other user's profile");
         }
+
+        TraineeDTO.Response.Profile response = metricsExecutor.executeWithMetrics(
+                MetricsExecutor.MetricsContext.builder()
+                        .operation("get_trainee_profile")
+                        .endpoint("/api/trainees/{username}")
+                        .method("GET")
+                        .build(),
+                () -> traineeService.getTraineeProfile(username),
+                result -> traineeMetrics.recordTraineeProfileView(username),
+                null
+        );
+
+        log.info("[Transaction: {}] Response: 200 OK", transactionId);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping(value = "/{username}/trainings", produces = "application/json")
-    @Operation(summary = "Get trainee trainings list", description = "Retrieves list of trainings for a trainee with optional filters")
+    @Operation(summary = "Get trainee trainings list", description = "Retrieves list of trainings for a trainee with optional filters. Requires JWT authentication.",
+            security = @SecurityRequirement(name = "Bearer Authentication"))
     public ResponseEntity<List<TrainingDTO.Response.TraineeTraining>> getTraineeTrainings(
             @Parameter(description = "Trainee username") @PathVariable String username,
-            @Parameter(description = "Trainee password") @RequestParam String password,
-            @Parameter(description = "Training filters") TrainingDTO.Request.TraineeTrainingsFilter filter) {
+            @Parameter(description = "Training filters") TrainingDTO.Request.TraineeTrainingsFilter filter,
+            Authentication authentication) {
 
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] GET /api/trainees/{}/trainings", transactionId, username);
 
-        Timer.Sample sample = apiPerformanceMetrics.startTimer();
-        apiPerformanceMetrics.recordRequest("/api/trainees/" + username + "/trainings", "GET");
-
-        try {
-            List<TrainingDTO.Response.TraineeTraining> response = traineeService.getTraineeTrainings(
-                    username, password, filter.periodFrom(), filter.periodTo(), filter.trainerName(), filter.trainingType());
-
-            traineeMetrics.recordTraineeTrainingsQuery(username);
-
-            apiPerformanceMetrics.stopTimerSuccess(sample, "get_trainee_trainings", "/api/trainees/{username}/trainings", "GET");
-            apiPerformanceMetrics.recordResponse("/api/trainees/" + username + "/trainings", "GET", 200);
-
-            log.info("[Transaction: {}] Response: 200 OK", transactionId);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            apiPerformanceMetrics.stopTimerFailure(sample, "get_trainee_trainings", "/api/trainees/{username}/trainings", "GET");
-            apiPerformanceMetrics.recordResponse("/api/trainees/" + username + "/trainings", "GET", 500);
-            throw e;
+        if (!authentication.getName().equals(username)) {
+            log.warn("[Transaction: {}] Access denied: user {} tried to access trainings of {}",
+                    transactionId, authentication.getName(), username);
+            throw new AccessDeniedException("Cannot access other user's trainings");
         }
+
+        List<TrainingDTO.Response.TraineeTraining> response = metricsExecutor.executeWithMetrics(
+                MetricsExecutor.MetricsContext.builder()
+                        .operation("get_trainee_trainings")
+                        .endpoint("/api/trainees/{username}/trainings")
+                        .method("GET")
+                        .build(),
+                () -> traineeService.getTraineeTrainings(
+                        username, filter.periodFrom(), filter.periodTo(), filter.trainerName(), filter.trainingType()),
+                result -> traineeMetrics.recordTraineeTrainingsQuery(username),
+                null
+        );
+
+        log.info("[Transaction: {}] Response: 200 OK", transactionId);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping(value = "/{username}/trainers/unassigned", produces = "application/json")
-    @Operation(summary = "Get unassigned trainers", description = "Retrieves list of active trainers not assigned to the trainee")
+    @Operation(summary = "Get unassigned trainers", description = "Retrieves list of active trainers not assigned to the trainee. Requires JWT authentication.",
+            security = @SecurityRequirement(name = "Bearer Authentication"))
     public ResponseEntity<List<TrainerDTO.Response.Unassigned>> getUnassignedTrainers(
             @Parameter(description = "Trainee username") @PathVariable String username,
-            @Parameter(description = "Trainee password") @RequestParam String password) {
+            Authentication authentication) {
 
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] GET /api/trainees/{}/trainers/unassigned", transactionId, username);
 
-        Timer.Sample sample = apiPerformanceMetrics.startTimer();
-        apiPerformanceMetrics.recordRequest("/api/trainees/" + username + "/trainers/unassigned", "GET");
-
-        try {
-            List<TrainerDTO.Response.Unassigned> response = traineeService.getUnassignedTrainers(username, password);
-
-            traineeMetrics.recordUnassignedTrainersQuery(username);
-
-            apiPerformanceMetrics.stopTimerSuccess(sample, "get_unassigned_trainers", "/api/trainees/{username}/trainers/unassigned", "GET");
-            apiPerformanceMetrics.recordResponse("/api/trainees/" + username + "/trainers/unassigned", "GET", 200);
-
-            log.info("[Transaction: {}] Response: 200 OK", transactionId);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            apiPerformanceMetrics.stopTimerFailure(sample, "get_unassigned_trainers", "/api/trainees/{username}/trainers/unassigned", "GET");
-            apiPerformanceMetrics.recordResponse("/api/trainees/" + username + "/trainers/unassigned", "GET", 500);
-            throw e;
+        if (!authentication.getName().equals(username)) {
+            throw new AccessDeniedException("Cannot access other user's data");
         }
+
+        List<TrainerDTO.Response.Unassigned> response = metricsExecutor.executeWithMetrics(
+                MetricsExecutor.MetricsContext.builder()
+                        .operation("get_unassigned_trainers")
+                        .endpoint("/api/trainees/{username}/trainers/unassigned")
+                        .method("GET")
+                        .build(),
+                () -> traineeService.getUnassignedTrainers(username),
+                result -> traineeMetrics.recordUnassignedTrainersQuery(username),
+                null
+        );
+
+        log.info("[Transaction: {}] Response: 200 OK", transactionId);
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping(value = "/{username}", consumes = "application/json", produces = "application/json")
-    @Operation(summary = "Update trainee profile", description = "Updates trainee profile information")
+    @Operation(summary = "Update trainee profile", description = "Updates trainee profile information. Requires JWT authentication.",
+            security = @SecurityRequirement(name = "Bearer Authentication"))
     public ResponseEntity<TraineeDTO.Response.Updated> updateTrainee(
             @Valid @RequestBody TraineeDTO.Request.Update request,
             @Parameter(description = "Trainee username") @PathVariable String username,
-            @Parameter(description = "Trainee password") @RequestParam String password) {
+            Authentication authentication) {
 
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] PUT /api/trainees/{}", transactionId, username);
 
-        Timer.Sample sample = apiPerformanceMetrics.startTimer();
-        apiPerformanceMetrics.recordRequest("/api/trainees/" + username, "PUT");
-
-        try {
-            TraineeDTO.Response.Updated response = traineeService.updateTrainee(request, username, password);
-
-            traineeMetrics.incrementTraineeUpdated();
-
-            apiPerformanceMetrics.stopTimerSuccess(sample, "update_trainee", "/api/trainees/{username}", "PUT");
-            apiPerformanceMetrics.recordResponse("/api/trainees/" + username, "PUT", 200);
-
-            log.info("[Transaction: {}] Response: 200 OK", transactionId);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            traineeMetrics.incrementTraineeOperationFailed("update");
-            apiPerformanceMetrics.stopTimerFailure(sample, "update_trainee", "/api/trainees/{username}", "PUT");
-            apiPerformanceMetrics.recordResponse("/api/trainees/" + username, "PUT", 500);
-            throw e;
+        if (!authentication.getName().equals(username)) {
+            throw new AccessDeniedException("Cannot update other user's profile");
         }
+
+        TraineeDTO.Response.Updated response = metricsExecutor.executeWithMetrics(
+                MetricsExecutor.MetricsContext.builder()
+                        .operation("update_trainee")
+                        .endpoint("/api/trainees/{username}")
+                        .method("PUT")
+                        .build(),
+                () -> traineeService.updateTrainee(request, username),
+                result -> traineeMetrics.incrementTraineeUpdated(),
+                ex -> traineeMetrics.incrementTraineeOperationFailed("update")
+        );
+
+        log.info("[Transaction: {}] Response: 200 OK", transactionId);
+        return ResponseEntity.ok(response);
     }
 
     @PatchMapping(value = "/{username}/activate", consumes = "application/json")
-    @Operation(summary = "Activate/Deactivate trainee", description = "Changes trainee active status")
+    @Operation(summary = "Activate/Deactivate trainee", description = "Changes trainee active status. Requires JWT authentication.",
+            security = @SecurityRequirement(name = "Bearer Authentication"))
     public ResponseEntity<Void> updateTraineeStatus(
             @Parameter(description = "Trainee username") @PathVariable String username,
             @Valid @RequestBody TraineeDTO.Request.UpdateStatus request,
-            @Parameter(description = "Trainee password") @RequestParam String password) {
+            Authentication authentication) {
 
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] PATCH /api/trainees/{}/activate", transactionId, username);
 
-        Timer.Sample sample = apiPerformanceMetrics.startTimer();
-        apiPerformanceMetrics.recordRequest("/api/trainees/" + username + "/activate", "PATCH");
-
-        try {
-            traineeService.updateTraineeStatus(username, password, request.isActive());
-
-            traineeMetrics.recordTraineeActivation(request.isActive());
-
-            apiPerformanceMetrics.stopTimerSuccess(sample, "update_trainee_status", "/api/trainees/{username}/activate", "PATCH");
-            apiPerformanceMetrics.recordResponse("/api/trainees/" + username + "/activate", "PATCH", 200);
-
-            log.info("[Transaction: {}] Response: 200 OK", transactionId);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            apiPerformanceMetrics.stopTimerFailure(sample, "update_trainee_status", "/api/trainees/{username}/activate", "PATCH");
-            apiPerformanceMetrics.recordResponse("/api/trainees/" + username + "/activate", "PATCH", 500);
-            throw e;
+        if (!authentication.getName().equals(username)) {
+            throw new AccessDeniedException("Cannot update other user's status");
         }
+
+        metricsExecutor.executeVoidWithMetrics(
+                MetricsExecutor.MetricsContext.builder()
+                        .operation("update_trainee_status")
+                        .endpoint("/api/trainees/{username}/activate")
+                        .method("PATCH")
+                        .build(),
+                () -> traineeService.updateTraineeStatus(username, request.isActive()),
+                () -> traineeMetrics.recordTraineeActivation(request.isActive()),
+                null
+        );
+
+        log.info("[Transaction: {}] Response: 200 OK", transactionId);
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping(value = "/{username}/trainers", consumes = "application/json", produces = "application/json")
-    @Operation(summary = "Update trainee's trainers list", description = "Updates the list of trainers assigned to the trainee")
+    @Operation(summary = "Update trainee's trainers list", description = "Updates the list of trainers assigned to the trainee. Requires JWT authentication.",
+            security = @SecurityRequirement(name = "Bearer Authentication"))
     public ResponseEntity<List<TrainerDTO.Response.InList>> updateTraineeTrainers(
             @Parameter(description = "Trainee username") @PathVariable String username,
             @Valid @RequestBody TraineeDTO.Request.UpdateTrainers request,
-            @Parameter(description = "Trainee password") @RequestParam String password) {
+            Authentication authentication) {
 
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] PUT /api/trainees/{}/trainers", transactionId, username);
 
-        Timer.Sample sample = apiPerformanceMetrics.startTimer();
-        apiPerformanceMetrics.recordRequest("/api/trainees/" + username + "/trainers", "PUT");
-
-        try {
-            List<TrainerDTO.Response.InList> response = traineeService.updateTraineeTrainers(username, request, password);
-
-            traineeMetrics.recordTraineeTrainersUpdate(username, request.trainerUsernames().size());
-
-            apiPerformanceMetrics.stopTimerSuccess(sample, "update_trainee_trainers", "/api/trainees/{username}/trainers", "PUT");
-            apiPerformanceMetrics.recordResponse("/api/trainees/" + username + "/trainers", "PUT", 200);
-
-            log.info("[Transaction: {}] Response: 200 OK", transactionId);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            apiPerformanceMetrics.stopTimerFailure(sample, "update_trainee_trainers", "/api/trainees/{username}/trainers", "PUT");
-            apiPerformanceMetrics.recordResponse("/api/trainees/" + username + "/trainers", "PUT", 500);
-            throw e;
+        if (!authentication.getName().equals(username)) {
+            throw new AccessDeniedException("Cannot update other user's trainers");
         }
+
+        List<TrainerDTO.Response.InList> response = metricsExecutor.executeWithMetrics(
+                MetricsExecutor.MetricsContext.builder()
+                        .operation("update_trainee_trainers")
+                        .endpoint("/api/trainees/{username}/trainers")
+                        .method("PUT")
+                        .build(),
+                () -> traineeService.updateTraineeTrainers(username, request),
+                result -> traineeMetrics.recordTraineeTrainersUpdate(username, request.trainerUsernames().size()),
+                null
+        );
+
+        log.info("[Transaction: {}] Response: 200 OK", transactionId);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{username}")
-    @Operation(summary = "Delete trainee profile", description = "Deletes trainee profile and all associated trainings")
+    @Operation(summary = "Delete trainee profile", description = "Deletes trainee profile and all associated trainings. Requires JWT authentication.",
+            security = @SecurityRequirement(name = "Bearer Authentication"))
     public ResponseEntity<Void> deleteTrainee(
             @Parameter(description = "Trainee username") @PathVariable String username,
-            @Parameter(description = "Trainee password") @RequestParam String password) {
+            Authentication authentication) {
 
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] DELETE /api/trainees/{}", transactionId, username);
 
-        Timer.Sample sample = apiPerformanceMetrics.startTimer();
-        apiPerformanceMetrics.recordRequest("/api/trainees/" + username, "DELETE");
-
-        try {
-            traineeService.deleteTraineeByUsername(username, password);
-
-            traineeMetrics.incrementTraineeDeleted();
-
-            apiPerformanceMetrics.stopTimerSuccess(sample, "delete_trainee", "/api/trainees/{username}", "DELETE");
-            apiPerformanceMetrics.recordResponse("/api/trainees/" + username, "DELETE", 200);
-
-
-            log.info("[Transaction: {}] Response: 200 OK", transactionId);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            traineeMetrics.incrementTraineeOperationFailed("delete");
-            apiPerformanceMetrics.stopTimerFailure(sample, "delete_trainee", "/api/trainees/{username}", "DELETE");
-            apiPerformanceMetrics.recordResponse("/api/trainees/" + username, "DELETE", 500);
-            throw e;
+        if (!authentication.getName().equals(username)) {
+            throw new AccessDeniedException("Cannot delete other user's profile");
         }
+
+        metricsExecutor.executeVoidWithMetrics(
+                MetricsExecutor.MetricsContext.builder()
+                        .operation("delete_trainee")
+                        .endpoint("/api/trainees/{username}")
+                        .method("DELETE")
+                        .build(),
+                () -> traineeService.deleteTraineeByUsername(username),
+                traineeMetrics::incrementTraineeDeleted,
+                ex -> traineeMetrics.incrementTraineeOperationFailed("delete")
+        );
+
+        log.info("[Transaction: {}] Response: 200 OK", transactionId);
+        return ResponseEntity.ok().build();
     }
 }

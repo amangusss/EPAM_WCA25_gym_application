@@ -1,36 +1,60 @@
 package com.github.amangusss.gym_application.controller;
 
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
+import com.github.amangusss.gym_application.jwt.JwtUtils;
 import com.github.amangusss.gym_application.metrics.ApiPerformanceMetrics;
+import com.github.amangusss.gym_application.metrics.MetricsExecutor;
 import com.github.amangusss.gym_application.metrics.TrainingMetrics;
+import com.github.amangusss.gym_application.service.BruteForceProtectionService;
 import com.github.amangusss.gym_application.service.TrainingService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
+import java.util.function.Supplier;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(TrainingController.class)
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
+@WebMvcTest(
+        controllers = TrainingController.class,
+        excludeAutoConfiguration = {
+                SecurityAutoConfiguration.class,
+                SecurityFilterAutoConfiguration.class,
+                UserDetailsServiceAutoConfiguration.class
+        }
+)
+@AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
 @DisplayName("TrainingController Tests")
 class TrainingControllerTest {
 
@@ -51,11 +75,23 @@ class TrainingControllerTest {
     @MockitoBean
     private TrainingService trainingService;
 
+    @MockitoBean(name = "jwtUtils")
+    private JwtUtils jwtUtils;
+
+    @MockitoBean(name = "customUserDetailsService")
+    private UserDetailsService userDetailsService;
+
+    @MockitoBean(name = "bruteForceProtectionService")
+    private BruteForceProtectionService bruteForceProtectionService;
+
     @MockitoBean
     private TrainingMetrics trainingMetrics;
 
     @MockitoBean
     private ApiPerformanceMetrics apiPerformanceMetrics;
+
+    @MockitoBean
+    private MetricsExecutor metricsExecutor;
 
     @TestConfiguration
     static class TestConfig {
@@ -67,7 +103,24 @@ class TrainingControllerTest {
 
     @BeforeEach
     void setUp() {
-        reset(trainingService, trainingMetrics, apiPerformanceMetrics);
+        reset(trainingService, trainingMetrics, apiPerformanceMetrics, metricsExecutor);
+
+        when(metricsExecutor.executeWithMetrics(any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(1);
+                    return supplier.get();
+                });
+
+        doAnswer(invocation -> {
+            Runnable businessLogic = invocation.getArgument(1);
+            Runnable onSuccess = invocation.getArgument(2);
+
+            businessLogic.run();
+            if (onSuccess != null) {
+                onSuccess.run();
+            }
+            return null;
+        }).when(metricsExecutor).executeVoidWithMetrics(any(), any(), any(), any());
     }
 
     @Test

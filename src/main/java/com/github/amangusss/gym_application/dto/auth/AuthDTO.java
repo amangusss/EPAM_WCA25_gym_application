@@ -20,4 +20,15 @@ public class AuthDTO {
                 @NotBlank String newPassword
         ) {}
     }
+
+    public static class Response {
+        public record Login(
+                String token,
+                String username
+        ) {}
+
+        public record Logout(
+                String message
+        ) {}
+    }
 }

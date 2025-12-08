@@ -3,8 +3,10 @@ package com.github.amangusss.gym_application.controller;
 import com.github.amangusss.gym_application.dto.trainee.TraineeDTO;
 import com.github.amangusss.gym_application.dto.trainer.TrainerDTO;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
+import com.github.amangusss.gym_application.jwt.JwtUtils;
 import com.github.amangusss.gym_application.metrics.ApiPerformanceMetrics;
 import com.github.amangusss.gym_application.metrics.TraineeMetrics;
+import com.github.amangusss.gym_application.service.BruteForceProtectionService;
 import com.github.amangusss.gym_application.service.TraineeService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,22 +14,31 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -36,7 +47,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(TraineeController.class)
+
+@SpringBootTest
+@AutoConfigureMockMvc()
+@ActiveProfiles("test")
+@WithMockUser(username = "Dastan.Ibraimov")
 @DisplayName("TraineeController Tests")
 class TraineeControllerTest {
 
@@ -70,14 +85,44 @@ class TraineeControllerTest {
     private TraineeService traineeService;
 
     @MockitoBean
+    private com.github.amangusss.gym_application.metrics.MetricsExecutor metricsExecutor;
+
+    @MockitoBean
     private TraineeMetrics traineeMetrics;
 
     @MockitoBean
     private ApiPerformanceMetrics apiPerformanceMetrics;
 
+    @MockitoBean(name = "jwtUtils")
+    private JwtUtils jwtUtils;
+
+    @MockitoBean(name = "customUserDetailsService")
+    private UserDetailsService userDetailsService;
+
+    @MockitoBean(name = "bruteForceProtectionService")
+    private BruteForceProtectionService bruteForceProtectionService;
+
+
     @BeforeEach
     void setUp() {
-        reset(traineeService, traineeMetrics, apiPerformanceMetrics);
+        reset(traineeService, traineeMetrics, apiPerformanceMetrics, metricsExecutor);
+
+        when(metricsExecutor.executeWithMetrics(any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(1);
+                    return supplier.get();
+                });
+
+        doAnswer(invocation -> {
+            Runnable runnable = invocation.getArgument(1);
+            if (runnable != null) runnable.run();
+            return null;
+        }).when(metricsExecutor).executeVoidWithMetrics(any(), any(), any(), any());
+    }
+
+    private Authentication createAuthentication() {
+        return new UsernamePasswordAuthenticationToken(
+                TraineeControllerTest.TRAINEE_USERNAME, null, Collections.emptyList());
     }
 
     @Test
@@ -101,17 +146,17 @@ class TraineeControllerTest {
     @DisplayName("Should return 200 OK and profile when getting trainee profile")
     void shouldReturnOkAndProfileWhenGettingTraineeProfile() throws Exception {
         TraineeDTO.Response.Profile expectedProfile = createTraineeProfile();
-        when(traineeService.findTraineeByUsername(TRAINEE_USERNAME, VALID_PASSWORD)).thenReturn(expectedProfile);
+        when(traineeService.getTraineeProfile(TRAINEE_USERNAME)).thenReturn(expectedProfile);
 
         mockMvc.perform(get(TRAINEE_BY_USERNAME_ENDPOINT, TRAINEE_USERNAME)
-                        .param("password", VALID_PASSWORD))
+                        .with(authentication(createAuthentication())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.firstName").value(TRAINEE_FIRST_NAME))
                 .andExpect(jsonPath("$.lastName").value(TRAINEE_LAST_NAME))
                 .andExpect(jsonPath("$.dateOfBirth").value(BIRTH_DATE.toString()))
                 .andExpect(jsonPath("$.address").value(ADDRESS));
 
-        verify(traineeService, times(1)).findTraineeByUsername(TRAINEE_USERNAME, VALID_PASSWORD);
+        verify(traineeService, times(1)).getTraineeProfile(TRAINEE_USERNAME);
     }
 
     @Test
@@ -119,46 +164,46 @@ class TraineeControllerTest {
     void shouldReturnOkAndUpdatedResponseWhenTraineeUpdatesSuccessfully() throws Exception {
         TraineeDTO.Request.Update updateRequest = createUpdateRequest();
         TraineeDTO.Response.Updated expectedResponse = createUpdatedResponse();
-        when(traineeService.updateTrainee(any(TraineeDTO.Request.Update.class), any(), eq(VALID_PASSWORD)))
+        when(traineeService.updateTrainee(any(TraineeDTO.Request.Update.class), eq(TRAINEE_USERNAME)))
                 .thenReturn(expectedResponse);
 
         mockMvc.perform(put(TRAINEE_BY_USERNAME_ENDPOINT, TRAINEE_USERNAME)
-                        .param("password", VALID_PASSWORD)
+                        .with(authentication(createAuthentication()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value(TRAINEE_USERNAME))
                 .andExpect(jsonPath("$.address").value(NEW_ADDRESS));
 
-        verify(traineeService, times(1)).updateTrainee(any(TraineeDTO.Request.Update.class), any(), eq(VALID_PASSWORD));
+        verify(traineeService, times(1)).updateTrainee(any(TraineeDTO.Request.Update.class), eq(TRAINEE_USERNAME));
     }
 
     @Test
     @DisplayName("Should return 200 OK when deleting trainee successfully")
     void shouldReturnOkWhenDeletingTraineeSuccessfully() throws Exception {
-        doNothing().when(traineeService).deleteTraineeByUsername(TRAINEE_USERNAME, VALID_PASSWORD);
+        doNothing().when(traineeService).deleteTraineeByUsername(TRAINEE_USERNAME);
 
         mockMvc.perform(delete(TRAINEE_BY_USERNAME_ENDPOINT, TRAINEE_USERNAME)
-                        .param("password", VALID_PASSWORD))
+                        .with(authentication(createAuthentication())))
                 .andExpect(status().isOk());
 
-        verify(traineeService, times(1)).deleteTraineeByUsername(TRAINEE_USERNAME, VALID_PASSWORD);
+        verify(traineeService, times(1)).deleteTraineeByUsername(TRAINEE_USERNAME);
     }
 
     @Test
     @DisplayName("Should return 200 OK when updating trainee status successfully")
     void shouldReturnOkWhenUpdatingTraineeStatusSuccessfully() throws Exception {
         boolean newStatus = false;
-        TraineeDTO.Request.UpdateStatus statusRequest = new TraineeDTO.Request.UpdateStatus(TRAINEE_USERNAME, newStatus);
-        doNothing().when(traineeService).updateTraineeStatus(TRAINEE_USERNAME, VALID_PASSWORD, newStatus);
+        TraineeDTO.Request.UpdateStatus statusRequest = new TraineeDTO.Request.UpdateStatus(newStatus);
+        doNothing().when(traineeService).updateTraineeStatus(TRAINEE_USERNAME, newStatus);
 
         mockMvc.perform(patch(ACTIVATE_ENDPOINT, TRAINEE_USERNAME)
-                        .param("password", VALID_PASSWORD)
+                        .with(authentication(createAuthentication()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(statusRequest)))
                 .andExpect(status().isOk());
 
-        verify(traineeService, times(1)).updateTraineeStatus(TRAINEE_USERNAME, VALID_PASSWORD, newStatus);
+        verify(traineeService, times(1)).updateTraineeStatus(TRAINEE_USERNAME, newStatus);
     }
 
     @Test
@@ -166,11 +211,11 @@ class TraineeControllerTest {
     void shouldReturnOkAndTrainingsListWhenGettingTraineeTrainings() throws Exception {
         List<TrainingDTO.Response.TraineeTraining> expectedTrainings = Collections.emptyList();
         when(traineeService.getTraineeTrainings(
-                TRAINEE_USERNAME, VALID_PASSWORD, PERIOD_FROM, PERIOD_TO, TRAINER_NAME, TRAINING_TYPE))
+                TRAINEE_USERNAME, PERIOD_FROM, PERIOD_TO, TRAINER_NAME, TRAINING_TYPE))
                 .thenReturn(expectedTrainings);
 
         mockMvc.perform(get(TRAININGS_ENDPOINT, TRAINEE_USERNAME)
-                        .param("password", VALID_PASSWORD)
+                        .with(authentication(createAuthentication()))
                         .param("periodFrom", PERIOD_FROM.toString())
                         .param("periodTo", PERIOD_TO.toString())
                         .param("trainerName", TRAINER_NAME)
@@ -180,22 +225,22 @@ class TraineeControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
 
         verify(traineeService, times(1)).getTraineeTrainings(
-                TRAINEE_USERNAME, VALID_PASSWORD, PERIOD_FROM, PERIOD_TO, TRAINER_NAME, TRAINING_TYPE);
+                TRAINEE_USERNAME, PERIOD_FROM, PERIOD_TO, TRAINER_NAME, TRAINING_TYPE);
     }
 
     @Test
     @DisplayName("Should return 200 OK and unassigned trainers list when getting unassigned trainers")
     void shouldReturnOkAndUnassignedTrainersListWhenGettingUnassignedTrainers() throws Exception {
         List<TrainerDTO.Response.Unassigned> expectedTrainers = Collections.emptyList();
-        when(traineeService.getUnassignedTrainers(TRAINEE_USERNAME, VALID_PASSWORD)).thenReturn(expectedTrainers);
+        when(traineeService.getUnassignedTrainers(TRAINEE_USERNAME)).thenReturn(expectedTrainers);
 
         mockMvc.perform(get(UNASSIGNED_TRAINERS_ENDPOINT, TRAINEE_USERNAME)
-                        .param("password", VALID_PASSWORD))
+                        .with(authentication(createAuthentication())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(0));
 
-        verify(traineeService, times(1)).getUnassignedTrainers(TRAINEE_USERNAME, VALID_PASSWORD);
+        verify(traineeService, times(1)).getUnassignedTrainers(TRAINEE_USERNAME);
     }
 
     @Test
@@ -203,17 +248,17 @@ class TraineeControllerTest {
     void shouldReturnOkAndTrainersListWhenUpdatingTraineeTrainers() throws Exception {
         TraineeDTO.Request.UpdateTrainers updateTrainersRequest = createUpdateTrainersRequest();
         List<TrainerDTO.Response.InList> expectedTrainers = Collections.emptyList();
-        when(traineeService.updateTraineeTrainers(eq(TRAINEE_USERNAME), any(), eq(VALID_PASSWORD)))
+        when(traineeService.updateTraineeTrainers(eq(TRAINEE_USERNAME), any(TraineeDTO.Request.UpdateTrainers.class)))
                 .thenReturn(expectedTrainers);
 
         mockMvc.perform(put(UPDATE_TRAINERS_ENDPOINT, TRAINEE_USERNAME)
-                        .param("password", VALID_PASSWORD)
+                        .with(authentication(createAuthentication()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateTrainersRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
 
-        verify(traineeService, times(1)).updateTraineeTrainers(eq(TRAINEE_USERNAME), any(), eq(VALID_PASSWORD));
+        verify(traineeService, times(1)).updateTraineeTrainers(eq(TRAINEE_USERNAME), any(TraineeDTO.Request.UpdateTrainers.class));
     }
 
     private TraineeDTO.Request.Register createRegisterRequest() {
@@ -247,7 +292,7 @@ class TraineeControllerTest {
 
     private TraineeDTO.Request.UpdateTrainers createUpdateTrainersRequest() {
         return new TraineeDTO.Request.UpdateTrainers(
-                TRAINEE_USERNAME, List.of(TRAINER_USERNAME)
+                List.of(TRAINER_USERNAME)
         );
     }
 }
