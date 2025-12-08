@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -31,6 +32,7 @@ public class BruteForceProtectionServiceImpl implements BruteForceProtectionServ
 
     final LoginAttemptRepository loginAttemptRepository;
     final CacheManager cacheManager;
+    final ConcurrentHashMap<String, Object> locks = new ConcurrentHashMap<>();
 
     @Value("${security.max-login-attempts}")
     int maxLoginAttempts;
@@ -76,12 +78,15 @@ public class BruteForceProtectionServiceImpl implements BruteForceProtectionServ
     @Override
     @Transactional
     public void registerFailedLogin(String username) {
-        log.debug("Registering failed login for user: {}", username);
+        Object lock = locks.computeIfAbsent(username, k -> new Object());
+        synchronized (lock) {
+            log.debug("Registering failed login for user: {}", username);
 
-        LoginAttemptCache cacheEntry = getOrCreateAttempt(username);
-        incrementAttemptCount(cacheEntry);
-        applyLockoutIfNeeded(cacheEntry);
-        saveAttempt(cacheEntry);
+            LoginAttemptCache cacheEntry = getOrCreateAttempt(username);
+            incrementAttemptCount(cacheEntry);
+            applyLockoutIfNeeded(cacheEntry);
+            saveAttempt(cacheEntry);
+        }
     }
 
     private LoginAttemptCache getOrCreateAttempt(String username) {
