@@ -62,7 +62,7 @@ class TrainingControllerTest {
     private static final String TRAINEE_USERNAME = "Dastan.Ibraimov";
     private static final String TRAINING_NAME = "Morning Yoga";
     private static final LocalDate TRAINING_DATE = LocalDate.of(2025, 10, 28);
-    private static final int TRAINING_DURATION = 60;
+    private static final double TRAINING_DURATION = 60;
 
     private static final String TRAININGS_ENDPOINT = "/api/trainings";
 

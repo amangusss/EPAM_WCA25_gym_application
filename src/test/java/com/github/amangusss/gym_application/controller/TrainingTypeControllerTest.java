@@ -1,6 +1,6 @@
 package com.github.amangusss.gym_application.controller;
 
-import com.github.amangusss.gym_application.dto.trainingtype.TrainingTypeDTO;
+import com.github.amangusss.gym_application.dto.trainingType.TrainingTypeDTO;
 import com.github.amangusss.gym_application.exception.GlobalExceptionHandler;
 import com.github.amangusss.gym_application.jwt.JwtUtils;
 import com.github.amangusss.gym_application.metrics.ApiPerformanceMetrics;

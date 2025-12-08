@@ -7,19 +7,24 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.web.util.UriComponentsBuilder.fromHttpUrl;
+import static org.springframework.web.util.UriComponentsBuilder.fromUriString;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -98,7 +103,7 @@ class TraineeIntegrationTest {
         String jwtToken = getJwtToken(createdUsername, createdPassword);
         HttpHeaders authHeaders = createAuthHeaders(jwtToken);
 
-        String getProfileUrl = fromHttpUrl(baseUrl + "/api/trainees/{username}")
+        String getProfileUrl = fromUriString(baseUrl + "/api/trainees/{username}")
                 .queryParam("password", createdPassword)
                 .buildAndExpand(createdUsername)
                 .toUriString();
@@ -127,7 +132,7 @@ class TraineeIntegrationTest {
                 true
         );
 
-        String updateUrl = fromHttpUrl(baseUrl + "/api/trainees/{username}")
+        String updateUrl = fromUriString(baseUrl + "/api/trainees/{username}")
                 .queryParam("password", createdPassword)
                 .buildAndExpand(createdUsername)
                 .toUriString();
@@ -146,7 +151,7 @@ class TraineeIntegrationTest {
         assertThat(updatedProfile.firstName()).isEqualTo("Johnny");
         assertThat(updatedProfile.lastName()).isEqualTo("Doeson");
 
-        String deleteUrl = fromHttpUrl(baseUrl + "/api/trainees/{username}")
+        String deleteUrl = fromUriString(baseUrl + "/api/trainees/{username}")
                 .queryParam("password", createdPassword)
                 .buildAndExpand(createdUsername)
                 .toUriString();
@@ -201,7 +206,7 @@ class TraineeIntegrationTest {
 
         String newPassword = "newSecurePassword123";
         AuthDTO.Request.ChangePassword changePasswordRequest =
-                new AuthDTO.Request.ChangePassword(username, oldPassword, newPassword);
+                new AuthDTO.Request.ChangePassword(oldPassword, newPassword);
 
         HttpHeaders authHeaders = createAuthHeaders(jwtToken);
         HttpEntity<AuthDTO.Request.ChangePassword> changePasswordEntity =
@@ -219,7 +224,7 @@ class TraineeIntegrationTest {
         String newJwtToken = getJwtToken(username, newPassword);
         assertThat(newJwtToken).isNotNull();
 
-        String getProfileUrl = fromHttpUrl(baseUrl + "/api/trainees/{username}")
+        String getProfileUrl = fromUriString(baseUrl + "/api/trainees/{username}")
                 .queryParam("password", newPassword)
                 .buildAndExpand(username)
                 .toUriString();
@@ -267,7 +272,7 @@ class TraineeIntegrationTest {
         String jwtToken = getJwtToken(trainee.username(), trainee.password());
         HttpHeaders authHeaders = createAuthHeaders(jwtToken);
 
-        String unassignedUrl = fromHttpUrl(baseUrl + "/api/trainees/{username}/trainers/unassigned")
+        String unassignedUrl = fromUriString(baseUrl + "/api/trainees/{username}/trainers/unassigned")
                 .buildAndExpand(trainee.username())
                 .toUriString();
 
