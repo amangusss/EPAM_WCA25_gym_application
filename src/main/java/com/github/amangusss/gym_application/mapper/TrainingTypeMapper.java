@@ -1,6 +1,6 @@
 package com.github.amangusss.gym_application.mapper;
 
-import com.github.amangusss.gym_application.dto.trainingtype.TrainingTypeDTO;
+import com.github.amangusss.gym_application.dto.trainingType.TrainingTypeDTO;
 import com.github.amangusss.gym_application.entity.TrainingType;
 
 import org.springframework.stereotype.Component;

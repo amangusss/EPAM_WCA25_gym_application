@@ -13,6 +13,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.experimental.FieldDefaults;
 
 import java.util.Objects;
 
@@ -24,14 +25,15 @@ import java.util.Objects;
 @Builder
 @Entity
 @Table(name = "training_types")
+@FieldDefaults(level = lombok.AccessLevel.PRIVATE)
 public class TrainingType {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @Column(name = "type_name", nullable = false, unique = true)
-    private String typeName;
+    String typeName;
 
     @Override
     public boolean equals(Object o) {

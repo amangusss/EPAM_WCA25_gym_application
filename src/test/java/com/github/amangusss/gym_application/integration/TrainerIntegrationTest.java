@@ -4,7 +4,6 @@ import com.github.amangusss.gym_application.dto.trainer.TrainerDTO;
 import com.github.amangusss.gym_application.dto.auth.AuthDTO;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,7 +12,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -238,7 +242,7 @@ class TrainerIntegrationTest {
 
         String newPassword = "trainerNewPass456";
         AuthDTO.Request.ChangePassword changePasswordRequest =
-                new AuthDTO.Request.ChangePassword(username, oldPassword, newPassword);
+                new AuthDTO.Request.ChangePassword(oldPassword, newPassword);
 
         HttpEntity<AuthDTO.Request.ChangePassword> changePasswordEntity =
                 new HttpEntity<>(changePasswordRequest, auth);

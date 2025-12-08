@@ -22,7 +22,6 @@ logging:
     com.github.amangusss.gym_application: DEBUG
     org.hibernate.SQL: DEBUG
 
-# Provide placeholders expected by application.yaml
 JWT_SECRET: "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
 JWT_EXPIRATION: 3600000
 

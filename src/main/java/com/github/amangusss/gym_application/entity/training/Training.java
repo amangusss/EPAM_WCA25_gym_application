@@ -20,6 +20,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
 import java.util.Objects;
@@ -32,14 +33,15 @@ import java.util.Objects;
 @Builder
 @Entity
 @Table(name = "trainings")
+@FieldDefaults(level = lombok.AccessLevel.PRIVATE)
 public class Training {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @Column(name = "training_name", nullable = false)
-    private String trainingName;
+    String trainingName;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "training_type_id", nullable = false)
@@ -49,7 +51,7 @@ public class Training {
     private LocalDate trainingDate;
 
     @Column(name = "training_duration", nullable = false)
-    private Integer trainingDuration;
+    private Double trainingDuration;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trainer_id", nullable = false)

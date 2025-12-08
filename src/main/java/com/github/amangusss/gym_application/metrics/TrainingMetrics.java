@@ -17,6 +17,7 @@ public class TrainingMetrics {
 
     MeterRegistry meterRegistry;
     Counter trainingCreatedCounter;
+    Counter trainingDeletedCounter;
     Counter trainingFailedCounter;
     Counter totalOperationsCounter;
 
@@ -28,6 +29,13 @@ public class TrainingMetrics {
                 .tag("type", "training")
                 .tag("status", "success")
                 .tag("operation", "create")
+                .register(meterRegistry);
+
+        this.trainingDeletedCounter = Counter.builder("training.operations")
+                .description("Training operations counter")
+                .tag("type", "training")
+                .tag("status", "success")
+                .tag("operation", "delete")
                 .register(meterRegistry);
 
         this.trainingFailedCounter = Counter.builder("training.operations")
@@ -50,6 +58,12 @@ public class TrainingMetrics {
         log.debug("Training created counter incremented");
     }
 
+    public void incrementTrainingDeleted() {
+        trainingDeletedCounter.increment();
+        totalOperationsCounter.increment();
+        log.debug("Training deleted counter incremented");
+    }
+
     public void incrementTrainingFailed() {
         trainingFailedCounter.increment();
         totalOperationsCounter.increment();
@@ -65,12 +79,12 @@ public class TrainingMetrics {
                 .increment();
     }
 
-    public void recordTrainingDuration(long durationMinutes, String trainingType) {
+    public void recordTrainingDuration(double durationMinutes, String trainingType) {
         Timer.builder("training.duration")
                 .description("Training session duration")
                 .tag("training_type", trainingType)
                 .register(meterRegistry)
-                .record(java.time.Duration.ofMinutes(durationMinutes));
+                .record(java.time.Duration.ofMinutes((long) durationMinutes));
     }
 
     public void recordTrainingByTrainer(String trainerUsername) {

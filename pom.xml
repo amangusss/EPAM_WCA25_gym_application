@@ -12,7 +12,7 @@
     </parent>
 
     <groupId>com.github.amangusss</groupId>
-    <artifactId>gym-application</artifactId>
+    <artifactId>EPAM_WCA25_gym_application</artifactId>
     <version>1.0.0</version>
     <name>GymApplication</name>
     <description>Capstone project of the WCA#25 course</description>
@@ -23,7 +23,20 @@
         <swagger.version>2.8.13</swagger.version>
         <wiremock.version>3.3.1</wiremock.version>
         <jwt-version>0.11.2</jwt-version>
+        <dotenv.version>3.0.0</dotenv.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>2025.0.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <!-- Spring -->
@@ -89,6 +102,16 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
+        <!-- Caffeine -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+
         <!-- Integration Tests -->
         <dependency>
             <groupId>org.wiremock</groupId>
@@ -122,8 +145,32 @@
             <version>${jwt-version}</version>
             <scope>runtime</scope>
         </dependency>
-    </dependencies>
 
+        <!-- Eureka Client -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+
+        <!-- Resilience4j for Circuit Breaker -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
+        </dependency>
+
+        <!-- OpenFeign -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+
+        <!-- Dotenv -->
+        <dependency>
+            <groupId>io.github.cdimascio</groupId>
+            <artifactId>dotenv-java</artifactId>
+            <version>${dotenv.version}</version>
+        </dependency>
+    </dependencies>
     <build>
         <plugins>
             <plugin>

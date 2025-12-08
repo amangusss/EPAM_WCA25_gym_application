@@ -1,6 +1,6 @@
 package com.github.amangusss.gym_application.service.impl;
 
-import com.github.amangusss.gym_application.dto.trainingtype.TrainingTypeDTO;
+import com.github.amangusss.gym_application.dto.trainingType.TrainingTypeDTO;
 import com.github.amangusss.gym_application.entity.TrainingType;
 import com.github.amangusss.gym_application.exception.TrainingTypeNotFoundException;
 import com.github.amangusss.gym_application.mapper.TrainingTypeMapper;

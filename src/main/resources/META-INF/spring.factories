@@ -1,0 +1,1 @@
+org.springframework.context.ApplicationContextInitializer=com.github.amangusss.gym_application.config.DotenvConfig
