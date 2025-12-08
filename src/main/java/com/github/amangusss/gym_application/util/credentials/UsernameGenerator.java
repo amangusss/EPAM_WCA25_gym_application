@@ -11,7 +11,6 @@ import java.util.function.Predicate;
 @Slf4j
 @Component("usernameGenerator")
 public class UsernameGenerator {
-
     public String generateUsername(String firstName, String lastName, Predicate<String> usernameExistsChecker) {
         if (firstName == null || lastName == null) {
             throw new ValidationException("First name must not be null and last name must not be null");
