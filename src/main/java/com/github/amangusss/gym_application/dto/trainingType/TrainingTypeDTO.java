@@ -1,4 +1,4 @@
-package com.github.amangusss.gym_application.dto.trainingtype;
+package com.github.amangusss.gym_application.dto.trainingType;
 
 public class TrainingTypeDTO {
 
