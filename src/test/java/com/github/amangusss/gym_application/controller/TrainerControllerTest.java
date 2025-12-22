@@ -3,6 +3,8 @@ package com.github.amangusss.gym_application.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.amangusss.gym_application.dto.trainer.TrainerDTO;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
+import com.github.amangusss.gym_application.jms.listener.WorkloadDlqListener;
+import com.github.amangusss.gym_application.jms.service.WorkloadMessageProducer;
 import com.github.amangusss.gym_application.jwt.JwtUtils;
 import com.github.amangusss.gym_application.metrics.ApiPerformanceMetrics;
 import com.github.amangusss.gym_application.metrics.MetricsExecutor;
@@ -95,6 +97,12 @@ class TrainerControllerTest {
     @MockitoBean(name = "bruteForceProtectionService")
     private BruteForceProtectionService bruteForceProtectionService;
 
+    @MockitoBean
+    private WorkloadMessageProducer workloadMessageProducer;
+
+    @MockitoBean
+    private WorkloadDlqListener workloadDlqListener;
+
     @BeforeEach
     void setUp() {
         reset(trainerService, trainerMetrics, apiMetrics, metricsExecutor);
@@ -169,7 +177,7 @@ class TrainerControllerTest {
     }
 
     @Test
-    @DisplayName("Should return 200 OK when updating trainer status successfully")
+    @DisplayName("Should return 200 OK when updating trainer isActive successfully")
     void shouldReturnOkWhenUpdatingTrainerStatusSuccessfully() throws Exception {
         boolean newStatus = true;
         TrainerDTO.Request.UpdateStatus statusRequest = new TrainerDTO.Request.UpdateStatus(newStatus);

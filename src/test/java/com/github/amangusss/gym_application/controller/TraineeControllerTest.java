@@ -3,6 +3,8 @@ package com.github.amangusss.gym_application.controller;
 import com.github.amangusss.gym_application.dto.trainee.TraineeDTO;
 import com.github.amangusss.gym_application.dto.trainer.TrainerDTO;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
+import com.github.amangusss.gym_application.jms.listener.WorkloadDlqListener;
+import com.github.amangusss.gym_application.jms.service.WorkloadMessageProducer;
 import com.github.amangusss.gym_application.jwt.JwtUtils;
 import com.github.amangusss.gym_application.metrics.ApiPerformanceMetrics;
 import com.github.amangusss.gym_application.metrics.TraineeMetrics;
@@ -102,6 +104,11 @@ class TraineeControllerTest {
     @MockitoBean(name = "bruteForceProtectionService")
     private BruteForceProtectionService bruteForceProtectionService;
 
+    @MockitoBean
+    private WorkloadMessageProducer workloadMessageProducer;
+
+    @MockitoBean
+    private WorkloadDlqListener workloadDlqListener;
 
     @BeforeEach
     void setUp() {
@@ -191,7 +198,7 @@ class TraineeControllerTest {
     }
 
     @Test
-    @DisplayName("Should return 200 OK when updating trainee status successfully")
+    @DisplayName("Should return 200 OK when updating trainee isActive successfully")
     void shouldReturnOkWhenUpdatingTraineeStatusSuccessfully() throws Exception {
         boolean newStatus = false;
         TraineeDTO.Request.UpdateStatus statusRequest = new TraineeDTO.Request.UpdateStatus(newStatus);

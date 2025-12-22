@@ -45,7 +45,7 @@ class ApiPerformanceMetricsTest {
     }
 
     @Test
-    @DisplayName("Should record operation duration with success status")
+    @DisplayName("Should record operation duration with success isActive")
     void shouldRecordOperationDurationWithSuccessStatus() {
         Timer.Sample sample = apiPerformanceMetrics.startTimer();
         String operation = "create_training";
@@ -58,14 +58,14 @@ class ApiPerformanceMetricsTest {
                 .tag("operation", operation)
                 .tag("endpoint", endpoint)
                 .tag("method", method)
-                .tag("status", "success")
+                .tag("isActive", "success")
                 .timer();
         assertThat(timer).isNotNull();
         assertThat(timer.count()).isEqualTo(1L);
     }
 
     @Test
-    @DisplayName("Should record operation duration with failure status")
+    @DisplayName("Should record operation duration with failure isActive")
     void shouldRecordOperationDurationWithFailureStatus() {
         Timer.Sample sample = apiPerformanceMetrics.startTimer();
         String operation = "create_training";
@@ -78,7 +78,7 @@ class ApiPerformanceMetricsTest {
                 .tag("operation", operation)
                 .tag("endpoint", endpoint)
                 .tag("method", method)
-                .tag("status", "failure")
+                .tag("isActive", "failure")
                 .timer();
         assertThat(timer).isNotNull();
         assertThat(timer.count()).isEqualTo(1L);
@@ -127,7 +127,7 @@ class ApiPerformanceMetricsTest {
     }
 
     @Test
-    @DisplayName("Should record response per endpoint with status code")
+    @DisplayName("Should record response per endpoint with isActive code")
     void shouldRecordResponsePerEndpointWithStatusCode() {
         String endpoint = "/api/trainees";
         String method = "POST";
@@ -186,7 +186,7 @@ class ApiPerformanceMetricsTest {
     }
 
     @Test
-    @DisplayName("Should record different status codes separately")
+    @DisplayName("Should record different isActive codes separately")
     void shouldRecordDifferentStatusCodesSeparately() {
         String endpoint = "/api/trainings";
         String method = "POST";
@@ -229,14 +229,14 @@ class ApiPerformanceMetricsTest {
     }
 
     @Test
-    @DisplayName("Should use stopTimer with explicit status")
+    @DisplayName("Should use stopTimer with explicit isActive")
     void shouldUseStopTimerWithExplicitStatus() {
         Timer.Sample sample = apiPerformanceMetrics.startTimer();
 
         apiPerformanceMetrics.stopTimer(sample, "custom_op", "/custom", "PUT", "success");
 
         Timer timer = meterRegistry.find("api.operation.duration")
-                .tag("status", "success")
+                .tag("isActive", "success")
                 .timer();
         assertThat(timer).isNotNull();
         assertThat(timer.count()).isGreaterThan(0);

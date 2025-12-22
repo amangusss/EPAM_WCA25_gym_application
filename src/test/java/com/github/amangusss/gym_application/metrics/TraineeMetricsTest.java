@@ -79,7 +79,7 @@ class TraineeMetricsTest {
         assertThat(operationsCounter.count()).isEqualTo(initialCount + 1);
         Counter failedCounter = meterRegistry.find("trainee.operations")
                 .tag("operation", operation)
-                .tag("status", "failure")
+                .tag("isActive", "failure")
                 .counter();
         assertThat(failedCounter).isNotNull();
         assertThat(failedCounter.count()).isEqualTo(1.0);
@@ -104,8 +104,8 @@ class TraineeMetricsTest {
     void shouldRecordTraineeActivation() {
         traineeMetrics.recordTraineeActivation(true);
 
-        Counter counter = meterRegistry.find("trainee.status.changes")
-                .tag("status", "activated")
+        Counter counter = meterRegistry.find("trainee.isActive.changes")
+                .tag("isActive", "activated")
                 .counter();
         assertThat(counter).isNotNull();
         assertThat(counter.count()).isEqualTo(1.0);
@@ -116,8 +116,8 @@ class TraineeMetricsTest {
     void shouldRecordTraineeDeactivation() {
         traineeMetrics.recordTraineeActivation(false);
 
-        Counter counter = meterRegistry.find("trainee.status.changes")
-                .tag("status", "deactivated")
+        Counter counter = meterRegistry.find("trainee.isActive.changes")
+                .tag("isActive", "deactivated")
                 .counter();
         assertThat(counter).isNotNull();
         assertThat(counter.count()).isEqualTo(1.0);
@@ -187,7 +187,7 @@ class TraineeMetricsTest {
 
         Counter counter = meterRegistry.find("trainee.operations")
                 .tag("type", "trainee")
-                .tag("status", "success")
+                .tag("isActive", "success")
                 .tag("operation", "register")
                 .counter();
         assertThat(counter).isNotNull();
