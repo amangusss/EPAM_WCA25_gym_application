@@ -45,7 +45,7 @@ public class ApiPerformanceMetrics {
                 .tag("operation", operation)
                 .tag("endpoint", endpoint)
                 .tag("method", method)
-                .tag("status", status)
+                .tag("isActive", status)
                 .register(meterRegistry);
 
         sample.stop(timer);
@@ -56,7 +56,7 @@ public class ApiPerformanceMetrics {
             failureCounter.increment();
         }
 
-        log.debug("Recorded {} operation: endpoint={}, method={}, status={}",
+        log.debug("Recorded {} operation: endpoint={}, method={}, isActive={}",
                 operation, endpoint, method, status);
     }
 

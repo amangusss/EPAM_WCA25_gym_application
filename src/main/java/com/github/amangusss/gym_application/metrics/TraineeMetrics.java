@@ -27,21 +27,21 @@ public class TraineeMetrics {
         this.traineeRegisteredCounter = Counter.builder("trainee.operations")
                 .description("Trainee operations counter")
                 .tag("type", "trainee")
-                .tag("status", "success")
+                .tag("isActive", "success")
                 .tag("operation", "register")
                 .register(meterRegistry);
 
         this.traineeUpdatedCounter = Counter.builder("trainee.operations")
                 .description("Trainee operations counter")
                 .tag("type", "trainee")
-                .tag("status", "success")
+                .tag("isActive", "success")
                 .tag("operation", "update")
                 .register(meterRegistry);
 
         this.traineeDeletedCounter = Counter.builder("trainee.operations")
                 .description("Trainee operations counter")
                 .tag("type", "trainee")
-                .tag("status", "success")
+                .tag("isActive", "success")
                 .tag("operation", "delete")
                 .register(meterRegistry);
 
@@ -74,7 +74,7 @@ public class TraineeMetrics {
         Counter.builder("trainee.operations")
                 .description("Trainee operations counter")
                 .tag("type", "trainee")
-                .tag("status", "failure")
+                .tag("isActive", "failure")
                 .tag("operation", operation)
                 .register(meterRegistry)
                 .increment();
@@ -92,9 +92,9 @@ public class TraineeMetrics {
     }
 
     public void recordTraineeActivation(boolean isActive) {
-        Counter.builder("trainee.status.changes")
-                .description("Trainee status changes")
-                .tag("status", isActive ? "activated" : "deactivated")
+        Counter.builder("trainee.isActive.changes")
+                .description("Trainee isActive changes")
+                .tag("isActive", isActive ? "activated" : "deactivated")
                 .register(meterRegistry)
                 .increment();
     }

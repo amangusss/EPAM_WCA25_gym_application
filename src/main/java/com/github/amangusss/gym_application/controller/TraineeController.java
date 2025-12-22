@@ -217,7 +217,7 @@ public class TraineeController {
     }
 
     @PatchMapping(value = "/{username}/activate", consumes = "application/json")
-    @Operation(summary = "Activate/Deactivate trainee", description = "Changes trainee active status. Requires JWT authentication.",
+    @Operation(summary = "Activate/Deactivate trainee", description = "Changes trainee active isActive. Requires JWT authentication.",
             security = @SecurityRequirement(name = "Bearer Authentication"))
     public ResponseEntity<Void> updateTraineeStatus(
             @Parameter(description = "Trainee username") @PathVariable String username,
@@ -228,7 +228,7 @@ public class TraineeController {
         log.info("[Transaction: {}] PATCH /api/trainees/{}/activate", transactionId, username);
 
         if (!authentication.getName().equals(username)) {
-            throw new AccessDeniedException("Cannot update other user's status");
+            throw new AccessDeniedException("Cannot update other user's isActive");
         }
 
         metricsExecutor.executeVoidWithMetrics(

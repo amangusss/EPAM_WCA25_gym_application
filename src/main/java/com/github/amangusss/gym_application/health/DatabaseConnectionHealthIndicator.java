@@ -30,7 +30,7 @@ public class DatabaseConnectionHealthIndicator implements HealthIndicator {
                 log.debug("Database connection health check: UP");
                 return Health.up()
                         .withDetail("database", "PostgreSQL")
-                        .withDetail("status", "Connected")
+                        .withDetail("isActive", "Connected")
                         .withDetail("url", dbUrl)
                         .withDetail("username", dbUsername)
                         .build();
@@ -39,7 +39,7 @@ public class DatabaseConnectionHealthIndicator implements HealthIndicator {
             log.error("Database connection health check failed: {}", e.getMessage());
             return Health.down()
                     .withDetail("database", "PostgreSQL")
-                    .withDetail("status", "Disconnected")
+                    .withDetail("isActive", "Disconnected")
                     .withDetail("url", dbUrl)
                     .withDetail("username", dbUsername)
                     .withDetail("error", e.getMessage())
@@ -48,7 +48,7 @@ public class DatabaseConnectionHealthIndicator implements HealthIndicator {
 
         return Health.down()
                 .withDetail("database", "PostgreSQL")
-                .withDetail("status", "Unknown")
+                .withDetail("isActive", "Unknown")
                 .withDetail("url", dbUrl)
                 .build();
     }

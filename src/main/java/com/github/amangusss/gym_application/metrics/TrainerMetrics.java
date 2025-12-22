@@ -25,14 +25,14 @@ public class TrainerMetrics {
         this.trainerRegisteredCounter = Counter.builder("trainer.operations")
                 .description("Trainer operations counter")
                 .tag("type", "trainer")
-                .tag("status", "success")
+                .tag("isActive", "success")
                 .tag("operation", "register")
                 .register(meterRegistry);
 
         this.trainerUpdatedCounter = Counter.builder("trainer.operations")
                 .description("Trainer operations counter")
                 .tag("type", "trainer")
-                .tag("status", "success")
+                .tag("isActive", "success")
                 .tag("operation", "update")
                 .register(meterRegistry);
 
@@ -59,7 +59,7 @@ public class TrainerMetrics {
         Counter.builder("trainer.operations")
                 .description("Trainer operations counter")
                 .tag("type", "trainer")
-                .tag("status", "failure")
+                .tag("isActive", "failure")
                 .tag("operation", operation)
                 .register(meterRegistry)
                 .increment();
@@ -77,9 +77,9 @@ public class TrainerMetrics {
     }
 
     public void recordTrainerActivation(boolean isActive) {
-        Counter.builder("trainer.status.changes")
-                .description("Trainer status changes")
-                .tag("status", isActive ? "activated" : "deactivated")
+        Counter.builder("trainer.isActive.changes")
+                .description("Trainer isActive changes")
+                .tag("isActive", isActive ? "activated" : "deactivated")
                 .register(meterRegistry)
                 .increment();
     }
