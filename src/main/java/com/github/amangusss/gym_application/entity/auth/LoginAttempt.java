@@ -12,6 +12,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
 
@@ -22,21 +23,25 @@ import java.time.LocalDateTime;
 @Builder
 @Entity
 @Table(name = "login_attempts")
+@FieldDefaults(level = lombok.AccessLevel.PRIVATE)
 public class LoginAttempt {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @Column(nullable = false)
-    private String username;
+    String username;
 
     @Column(name = "attempt_count", nullable = false)
-    private Integer attemptCount;
+    Integer attemptCount;
+
+    @Column(name = "first_attempt_time")
+    LocalDateTime firstAttemptTime;
 
     @Column(name = "last_attempt_time", nullable = false)
-    private LocalDateTime lastAttemptTime;
+    LocalDateTime lastAttemptTime;
 
     @Column(name = "locked_until")
-    private LocalDateTime lockedUntil;
+    LocalDateTime lockedUntil;
 }

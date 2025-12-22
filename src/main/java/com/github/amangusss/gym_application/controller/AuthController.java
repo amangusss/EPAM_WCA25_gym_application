@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -50,12 +52,15 @@ public class AuthController {
     @PutMapping("/change-password")
     @SecurityRequirement(name = "Bearer Authentication")
     @Operation(summary = "Change password", description = "Changes user password (trainee or trainer). Requires authentication.")
-    public ResponseEntity<Void> changePassword(@Valid @RequestBody AuthDTO.Request.ChangePassword request) {
+    public ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal UserDetails user,
+            @Valid @RequestBody AuthDTO.Request.ChangePassword request) {
 
         String transactionId = UUID.randomUUID().toString();
-        log.info("[Transaction: {}] PUT /api/auth/change-password - user: {}", transactionId, request.username());
+        String username = user.getUsername();
+        log.info("[Transaction: {}] PUT /api/auth/change-password - user: {}", transactionId, username);
 
-        authService.changePassword(request);
+        authService.changePassword(username, request);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok().build();

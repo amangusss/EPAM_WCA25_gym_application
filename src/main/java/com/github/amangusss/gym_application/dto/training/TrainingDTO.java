@@ -18,7 +18,7 @@ public class TrainingDTO {
                 @NotBlank String trainerUsername,
                 @NotBlank String trainingName,
                 @NotNull LocalDate trainingDate,
-                @NotNull @Positive Integer trainingDuration
+                @NotNull @Positive Double trainingDuration
         ) {}
 
         public record TrainerTrainingsFilter(
@@ -36,11 +36,19 @@ public class TrainingDTO {
     }
 
     public static class Response {
+        public record Created(
+                String traineeUsername,
+                String trainerUsername,
+                String trainingName,
+                LocalDate trainingDate,
+                Double trainingDuration
+        ) {}
+
         public record TraineeTraining(
                 String trainingName,
                 LocalDate trainingDate,
                 String trainingType,
-                Integer trainingDuration,
+                Double trainingDuration,
                 String trainerName
         ) {}
 
@@ -48,7 +56,7 @@ public class TrainingDTO {
                 String trainingName,
                 LocalDate trainingDate,
                 String trainingType,
-                Integer trainingDuration,
+                Double trainingDuration,
                 String traineeName
         ) {}
     }

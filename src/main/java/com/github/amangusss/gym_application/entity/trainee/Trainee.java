@@ -24,6 +24,7 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -38,21 +39,22 @@ import java.util.Set;
 @Builder
 @Entity
 @Table(name = "trainees")
+@FieldDefaults(level = lombok.AccessLevel.PRIVATE)
 public class Trainee {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
-    private CustomUser user;
+    CustomUser user;
 
     @Column(name = "date_of_birth")
-    private LocalDate dateOfBirth;
+    LocalDate dateOfBirth;
 
     @Column(name = "address")
-    private String address;
+    String address;
 
     @Builder.Default
     @ManyToMany(fetch = FetchType.LAZY)
@@ -62,7 +64,7 @@ public class Trainee {
             inverseJoinColumns = @JoinColumn(name = "trainer_id")
     )
     @ToString.Exclude
-    private Set<Trainer> trainers = new HashSet<>();
+    Set<Trainer> trainers = new HashSet<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "trainee",
@@ -70,7 +72,7 @@ public class Trainee {
             orphanRemoval = true,
             fetch = FetchType.LAZY)
     @ToString.Exclude
-    private Set<Training> trainings = new HashSet<>();
+    Set<Training> trainings = new HashSet<>();
 
     @Override
     public final boolean equals(Object o) {

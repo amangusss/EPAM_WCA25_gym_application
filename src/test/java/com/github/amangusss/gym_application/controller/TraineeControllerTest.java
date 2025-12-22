@@ -10,6 +10,7 @@ import com.github.amangusss.gym_application.service.BruteForceProtectionService;
 import com.github.amangusss.gym_application.service.TraineeService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.amangusss.gym_application.metrics.MetricsExecutor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 
 @SpringBootTest
 @AutoConfigureMockMvc()
@@ -85,7 +85,7 @@ class TraineeControllerTest {
     private TraineeService traineeService;
 
     @MockitoBean
-    private com.github.amangusss.gym_application.metrics.MetricsExecutor metricsExecutor;
+    private MetricsExecutor metricsExecutor;
 
     @MockitoBean
     private TraineeMetrics traineeMetrics;

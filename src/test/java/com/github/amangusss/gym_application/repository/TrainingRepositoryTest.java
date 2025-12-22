@@ -48,7 +48,7 @@ class TrainingRepositoryTest {
     private static final LocalDate TRAINEE_BIRTH_DATE = LocalDate.of(1990, 5, 15);
     private static final String TRAINING_TYPE_NAME = "Yoga";
     private static final String TRAINING_NAME = "Morning Yoga";
-    private static final int TRAINING_DURATION = 60;
+    private static final double TRAINING_DURATION = 60;
     private static final boolean IS_ACTIVE = true;
 
     @Mock

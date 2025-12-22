@@ -74,8 +74,7 @@ public class TraineeController {
     @Operation(summary = "Get current trainee profile",
             description = "Retrieves the profile of the currently authenticated trainee. Username is taken from JWT token.",
             security = @SecurityRequirement(name = "Bearer Authentication"))
-    public ResponseEntity<TraineeDTO.Response.Profile> getCurrentTraineeProfile(
-            Authentication authentication) {
+    public ResponseEntity<TraineeDTO.Response.Profile> getCurrentTraineeProfile(Authentication authentication) {
         String transactionId = UUID.randomUUID().toString();
         String username = authentication.getName();
         log.info("[Transaction: {}] GET /api/trainees/profile", transactionId);

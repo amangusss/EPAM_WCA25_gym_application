@@ -1,6 +1,7 @@
 package com.github.amangusss.gym_application.dto.auth;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.Builder;
 
 public class AuthDTO {
 
@@ -14,8 +15,8 @@ public class AuthDTO {
                 @NotBlank String password
         ) {}
 
+        @Builder
         public record ChangePassword(
-                @NotBlank String username,
                 @NotBlank String oldPassword,
                 @NotBlank String newPassword
         ) {}

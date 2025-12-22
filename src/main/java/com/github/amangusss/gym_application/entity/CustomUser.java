@@ -13,6 +13,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.experimental.FieldDefaults;
 
 import java.util.Objects;
 
@@ -21,6 +22,7 @@ import java.util.Objects;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@FieldDefaults(level = lombok.AccessLevel.PRIVATE)
 @Builder
 @Entity
 @Table(name = "users")
@@ -28,23 +30,23 @@ public class CustomUser {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @Column(name = "first_name", nullable = false)
-    private String firstName;
+    String firstName;
 
     @Column(name = "last_name", nullable = false)
-    private String lastName;
+    String lastName;
 
     @Builder.Default
     @Column(name = "is_active", nullable = false)
-    private boolean isActive = false;
+    boolean isActive = false;
 
     @Column(nullable = false, unique = true)
-    private String username;
+    String username;
 
     @Column(nullable = false)
-    private String password;
+    String password;
 
     @Override
     public boolean equals(Object o) {

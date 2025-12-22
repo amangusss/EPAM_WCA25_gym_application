@@ -69,17 +69,17 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void changePassword(AuthDTO.Request.ChangePassword request) {
-        log.debug("Password change request for user: {}", request.username());
+    public void changePassword(String username, AuthDTO.Request.ChangePassword request) {
+        log.debug("Password change request for user: {}", username);
 
-        CustomUser user = userRepository.findByUsername(request.username())
+        CustomUser user = userRepository.findByUsername(username)
                 .orElseThrow(() -> {
-                    log.warn("CustomUser not found: {}", request.username());
+                    log.warn("CustomUser not found: {}", username);
                     return new BadCredentialsException("User not found");
                 });
 
         if (!passwordEncoder.matches(request.oldPassword(), user.getPassword())) {
-            log.warn("Invalid old password for user: {}", request.username());
+            log.warn("Invalid old password for user: {}", username);
             throw new BadCredentialsException("Invalid old password");
         }
 
@@ -87,7 +87,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(hashedPassword);
         userRepository.save(user);
 
-        log.info("Password changed successfully for user: {}", request.username());
+        log.info("Password changed successfully for user: {}", username);
     }
 
     @Override

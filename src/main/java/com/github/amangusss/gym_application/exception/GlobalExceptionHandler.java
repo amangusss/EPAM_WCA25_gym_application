@@ -75,6 +75,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
+    @ExceptionHandler(TrainingNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleTrainingNotFound(TrainingNotFoundException ex) {
+        String transactionId = UUID.randomUUID().toString();
+        log.error("[Transaction: {}] Training not found: {}", transactionId, ex.getMessage());
+
+        ErrorResponse error = new ErrorResponse("Training Not Found", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(ValidationException ex) {
         String transactionId = UUID.randomUUID().toString();

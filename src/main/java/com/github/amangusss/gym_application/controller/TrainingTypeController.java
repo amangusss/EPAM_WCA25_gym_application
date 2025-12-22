@@ -1,6 +1,6 @@
 package com.github.amangusss.gym_application.controller;
 
-import com.github.amangusss.gym_application.dto.trainingtype.TrainingTypeDTO;
+import com.github.amangusss.gym_application.dto.trainingType.TrainingTypeDTO;
 import com.github.amangusss.gym_application.metrics.MetricsExecutor;
 import com.github.amangusss.gym_application.metrics.TrainingTypeMetrics;
 import com.github.amangusss.gym_application.service.TrainingTypeService;

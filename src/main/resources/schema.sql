@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS login_attempts (
     id BIGSERIAL PRIMARY KEY,
     username VARCHAR(100) NOT NULL,
     attempt_count INTEGER NOT NULL DEFAULT 0,
+    first_attempt_time TIMESTAMP,
     last_attempt_time TIMESTAMP NOT NULL,
     locked_until TIMESTAMP
 );
