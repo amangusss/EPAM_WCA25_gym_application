@@ -111,14 +111,14 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     public void updateTrainerStatus(String username, Boolean isActive) {
-        log.debug("Updating trainer status for username: {} to isActive: {}", username, isActive);
+        log.debug("Updating trainer isActive for username: {} to isActive: {}", username, isActive);
 
         Trainer trainer = trainerRepository.findByUserUsername(username)
                 .orElseThrow(() -> new TrainerNotFoundException("Trainer not found with username: " + username));
         trainer.getUser().setActive(isActive);
         trainerRepository.save(trainer);
 
-        log.info("Successfully updated trainer status for username: {}", username);
+        log.info("Successfully updated trainer isActive for username: {}", username);
     }
 
     @Override
