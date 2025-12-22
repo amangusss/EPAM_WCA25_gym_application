@@ -1,0 +1,27 @@
+services:
+  activemq:
+    image: symptoma/activemq:latest
+    container_name: activemq
+    ports:
+      - "61616:61616"
+      - "8161:8161"
+    environment:
+      ACTIVEMQ_USERNAME: admin
+      ACTIVEMQ_PASSWORD: admin
+    volumes:
+      - activemq-data:/opt/activemq/data
+    networks:
+      - gym-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8161"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  gym-network:
+    driver: bridge
+
+volumes:
+  activemq-data:
