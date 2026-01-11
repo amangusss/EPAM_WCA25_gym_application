@@ -1,7 +1,9 @@
 package com.github.amangusss.gym_application.controller;
 
+import com.github.amangusss.dto.generated.*;
 import com.github.amangusss.gym_application.dto.trainer.TrainerDTO;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
+import com.github.amangusss.gym_application.mapper.openapi.OpenApiTrainerMapper;
 import com.github.amangusss.gym_application.metrics.MetricsExecutor;
 import com.github.amangusss.gym_application.metrics.TrainerMetrics;
 import com.github.amangusss.gym_application.service.TrainerService;
@@ -44,28 +46,33 @@ public class TrainerController {
     TrainerService trainerService;
     TrainerMetrics trainerMetrics;
     MetricsExecutor metricsExecutor;
+    OpenApiTrainerMapper openApiTrainerMapper;
 
     @PostMapping(value = "/register", consumes = "application/json", produces = "application/json")
     @Operation(summary = "Register new trainer", description = "Creates a new trainer profile and generates username and password")
-    public ResponseEntity<TrainerDTO.Response.Registered> registerTrainer(
-            @Valid @RequestBody TrainerDTO.Request.Register request) {
+    public ResponseEntity<TrainerRegistrationResponse> registerTrainer(
+            @Valid @RequestBody TrainerRegistrationRequest request) {
 
         String transactionId = UUID.randomUUID().toString();
         log.info("[Transaction: {}] POST /api/trainers/register", transactionId);
 
-        TrainerDTO.Response.Registered response = metricsExecutor.executeWithMetrics(
+        TrainerDTO.Request.Register internalRequest = openApiTrainerMapper.toInternalTrainerCreate(request);
+
+        TrainerDTO.Response.Registered internalResponse = metricsExecutor.executeWithMetrics(
                 MetricsExecutor.MetricsContext.builder()
                         .operation("register_trainer")
                         .endpoint("/api/trainers/register")
                         .method("POST")
                         .build(),
-                () -> trainerService.registerTrainer(request),
+                () -> trainerService.registerTrainer(internalRequest),
                 result -> {
                     trainerMetrics.incrementTrainerRegistered();
-                    trainerMetrics.recordTrainerBySpecialization(request.specialization());
+                    trainerMetrics.recordTrainerBySpecialization(internalRequest.specialization());
                 },
                 ex -> trainerMetrics.incrementTrainerOperationFailed("register")
         );
+
+        TrainerRegistrationResponse response = openApiTrainerMapper.toGeneratedTrainerRegistered(internalResponse);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);
@@ -75,13 +82,13 @@ public class TrainerController {
     @Operation(summary = "Get current trainer profile",
             description = "Retrieves the profile of the currently authenticated trainer. Username is taken from JWT token.",
             security = @SecurityRequirement(name = "Bearer Authentication"))
-    public ResponseEntity<TrainerDTO.Response.Profile> getCurrentTrainerProfile(
+    public ResponseEntity<TrainerProfileResponse> getCurrentTrainerProfile(
             Authentication authentication) {
         String transactionId = UUID.randomUUID().toString();
         String username = authentication.getName();
         log.info("[Transaction: {}] GET /api/trainers/profile", transactionId);
 
-        TrainerDTO.Response.Profile response = metricsExecutor.executeWithMetrics(
+        TrainerDTO.Response.Profile internalResponse = metricsExecutor.executeWithMetrics(
                 MetricsExecutor.MetricsContext.builder()
                         .operation("get_current_trainer_profile")
                         .endpoint("/api/trainers/profile")
@@ -92,6 +99,8 @@ public class TrainerController {
                 ex -> trainerMetrics.incrementTrainerOperationFailed("get_profile")
         );
 
+        TrainerProfileResponse response = openApiTrainerMapper.toGeneratedTrainerProfile(internalResponse);
+
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);
     }
@@ -99,7 +108,7 @@ public class TrainerController {
     @GetMapping(value = "/{username}", produces = "application/json")
     @Operation(summary = "Get trainer profile", description = "Retrieves trainer profile by username. Requires JWT authentication.",
             security = @SecurityRequirement(name = "Bearer Authentication"))
-    public ResponseEntity<TrainerDTO.Response.Profile> getTrainerProfile(
+    public ResponseEntity<TrainerProfileResponse> getTrainerProfile(
             @Parameter(description = "Trainer username") @PathVariable String username,
             Authentication authentication) {
 
@@ -110,7 +119,7 @@ public class TrainerController {
             throw new AccessDeniedException("Cannot access other user's profile");
         }
 
-        TrainerDTO.Response.Profile response = metricsExecutor.executeWithMetrics(
+        TrainerDTO.Response.Profile internalResponse = metricsExecutor.executeWithMetrics(
                 MetricsExecutor.MetricsContext.builder()
                         .operation("get_trainer_profile")
                         .endpoint("/api/trainers/{username}")
@@ -121,6 +130,8 @@ public class TrainerController {
                 null
         );
 
+        TrainerProfileResponse response = openApiTrainerMapper.toGeneratedTrainerProfile(internalResponse);
+
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);
     }
@@ -128,8 +139,8 @@ public class TrainerController {
     @PutMapping(value = "/{username}", consumes = "application/json", produces = "application/json")
     @Operation(summary = "Update trainer profile", description = "Updates trainer profile information. Requires JWT authentication.",
             security = @SecurityRequirement(name = "Bearer Authentication"))
-    public ResponseEntity<TrainerDTO.Response.Updated> updateTrainer(
-            @Valid @RequestBody TrainerDTO.Request.Update request,
+    public ResponseEntity<TrainerProfileResponse> updateTrainer(
+            @Valid @RequestBody TrainerUpdateRequest request,
             @Parameter(description = "Trainer username") @PathVariable String username,
             Authentication authentication) {
 
@@ -140,16 +151,20 @@ public class TrainerController {
             throw new AccessDeniedException("Cannot update other user's profile");
         }
 
-        TrainerDTO.Response.Updated response = metricsExecutor.executeWithMetrics(
+        TrainerDTO.Request.Update internalRequest = openApiTrainerMapper.toInternalTrainerUpdate(request);
+
+        TrainerDTO.Response.Updated internalResponse = metricsExecutor.executeWithMetrics(
                 MetricsExecutor.MetricsContext.builder()
                         .operation("update_trainer")
                         .endpoint("/api/trainers/{username}")
                         .method("PUT")
                         .build(),
-                () -> trainerService.updateTrainerProfile(request, username),
+                () -> trainerService.updateTrainerProfile(internalRequest, username),
                 result -> trainerMetrics.incrementTrainerUpdated(),
                 ex -> trainerMetrics.incrementTrainerOperationFailed("update")
         );
+
+        TrainerProfileResponse response = openApiTrainerMapper.toGeneratedTrainerUpdated(internalResponse);
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);
@@ -160,7 +175,7 @@ public class TrainerController {
             security = @SecurityRequirement(name = "Bearer Authentication"))
     public ResponseEntity<Void> updateTrainerStatus(
             @Parameter(description = "Trainer username") @PathVariable String username,
-            @Valid @RequestBody TrainerDTO.Request.UpdateStatus request,
+            @Valid @RequestBody TrainerUpdateStatusRequest request,
             Authentication authentication) {
 
         String transactionId = UUID.randomUUID().toString();
@@ -176,8 +191,8 @@ public class TrainerController {
                         .endpoint("/api/trainers/{username}/activate")
                         .method("PATCH")
                         .build(),
-                () -> trainerService.updateTrainerStatus(username, request.isActive()),
-                () -> trainerMetrics.recordTrainerActivation(request.isActive()),
+                () -> trainerService.updateTrainerStatus(username, request.getIsActive()),
+                () -> trainerMetrics.recordTrainerActivation(request.getIsActive()),
                 null
         );
 
@@ -188,7 +203,7 @@ public class TrainerController {
     @GetMapping(value = "/{username}/trainings", produces = "application/json")
     @Operation(summary = "Get trainer trainings list", description = "Retrieves list of trainings for a trainer with optional filters. Requires JWT authentication.",
             security = @SecurityRequirement(name = "Bearer Authentication"))
-    public ResponseEntity<List<TrainingDTO.Response.TrainerTraining>> getTrainerTrainings(
+    public ResponseEntity<List<TrainingResponse>> getTrainerTrainings(
             @Parameter(description = "Trainer username") @PathVariable String username,
             @Parameter(description = "Training filters") TrainingDTO.Request.TrainerTrainingsFilter filter,
             Authentication authentication) {
@@ -200,7 +215,7 @@ public class TrainerController {
             throw new AccessDeniedException("Cannot access other user's trainings");
         }
 
-        List<TrainingDTO.Response.TrainerTraining> response = metricsExecutor.executeWithMetrics(
+        List<TrainingDTO.Response.TrainerTraining> internalResponse = metricsExecutor.executeWithMetrics(
                 MetricsExecutor.MetricsContext.builder()
                         .operation("get_trainer_trainings")
                         .endpoint("/api/trainers/{username}/trainings")
@@ -211,6 +226,10 @@ public class TrainerController {
                 result -> trainerMetrics.recordTrainerTrainingsQuery(username),
                 null
         );
+
+        List<TrainingResponse> response = internalResponse.stream()
+                .map(openApiTrainerMapper::toGeneratedTrainingResponse)
+                .collect(java.util.stream.Collectors.toList());
 
         log.info("[Transaction: {}] Response: 200 OK", transactionId);
         return ResponseEntity.ok(response);
