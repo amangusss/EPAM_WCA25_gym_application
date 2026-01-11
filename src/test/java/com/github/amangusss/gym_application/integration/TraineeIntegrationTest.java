@@ -1,6 +1,10 @@
 package com.github.amangusss.gym_application.integration;
 
-import com.github.amangusss.gym_application.dto.trainee.TraineeDTO;
+import com.github.amangusss.dto.generated.ChangePasswordRequest;
+import com.github.amangusss.dto.generated.TraineeProfileResponse;
+import com.github.amangusss.dto.generated.TraineeRegistrationRequest;
+import com.github.amangusss.dto.generated.TraineeRegistrationResponse;
+import com.github.amangusss.dto.generated.TraineeUpdateRequest;
 import com.github.amangusss.gym_application.dto.auth.AuthDTO;
 import com.github.amangusss.gym_application.jms.listener.WorkloadDlqListener;
 import com.github.amangusss.gym_application.jms.service.WorkloadMessageProducer;
@@ -83,7 +87,7 @@ class TraineeIntegrationTest {
     @Test
     @DisplayName("Integration Test: Create Trainee -> Get Profile -> Update -> Delete")
     void shouldPerformFullTraineeCrudCycle() {
-        TraineeDTO.Request.Register registerRequest = new TraineeDTO.Request.Register(
+        TraineeRegistrationRequest registerRequest = new TraineeRegistrationRequest(
                 "John",
                 "Doe",
                 LocalDate.of(1990, 1, 1),
@@ -92,22 +96,22 @@ class TraineeIntegrationTest {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<TraineeDTO.Request.Register> registerEntity = new HttpEntity<>(registerRequest, headers);
+        HttpEntity<TraineeRegistrationRequest> registerEntity = new HttpEntity<>(registerRequest, headers);
 
-        ResponseEntity<TraineeDTO.Response.Registered> registerResponse = restTemplate.postForEntity(
+        ResponseEntity<TraineeRegistrationResponse> registerResponse = restTemplate.postForEntity(
                 baseUrl + "/api/trainees/register",
                 registerEntity,
-                TraineeDTO.Response.Registered.class
+                TraineeRegistrationResponse.class
         );
 
         assertThat(registerResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        TraineeDTO.Response.Registered registered = registerResponse.getBody();
+        TraineeRegistrationResponse registered = registerResponse.getBody();
         assertThat(registered).isNotNull();
-        assertThat(registered.username()).isNotNull();
-        assertThat(registered.password()).isNotNull();
+        assertThat(registered.getUsername()).isNotNull();
+        assertThat(registered.getPassword()).isNotNull();
 
-        String createdUsername = registered.username();
-        String createdPassword = registered.password();
+        String createdUsername = registered.getUsername();
+        String createdPassword = registered.getPassword();
 
         String jwtToken = getJwtToken(createdUsername, createdPassword);
         HttpHeaders authHeaders = createAuthHeaders(jwtToken);
@@ -117,23 +121,23 @@ class TraineeIntegrationTest {
                 .buildAndExpand(createdUsername)
                 .toUriString();
 
-        ResponseEntity<TraineeDTO.Response.Profile> profileResponse = restTemplate.exchange(
+        ResponseEntity<TraineeProfileResponse> profileResponse = restTemplate.exchange(
                 getProfileUrl,
                 HttpMethod.GET,
                 new HttpEntity<>(authHeaders),
-                TraineeDTO.Response.Profile.class
+                TraineeProfileResponse.class
         );
 
         assertThat(profileResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        TraineeDTO.Response.Profile profile = profileResponse.getBody();
+        TraineeProfileResponse profile = profileResponse.getBody();
         assertThat(profile).isNotNull();
-        assertThat(profile.firstName()).isEqualTo("John");
-        assertThat(profile.lastName()).isEqualTo("Doe");
-        assertThat(profile.dateOfBirth()).isEqualTo(LocalDate.of(1990, 1, 1));
-        assertThat(profile.address()).isEqualTo("123 Main Street");
-        assertThat(profile.isActive()).isTrue();
+        assertThat(profile.getFirstName()).isEqualTo("John");
+        assertThat(profile.getLastName()).isEqualTo("Doe");
+        assertThat(profile.getDateOfBirth()).isEqualTo(LocalDate.of(1990, 1, 1));
+        assertThat(profile.getAddress()).isEqualTo("123 Main Street");
+        assertThat(profile.getIsActive()).isTrue();
 
-        TraineeDTO.Request.Update updateRequest = new TraineeDTO.Request.Update(
+        TraineeUpdateRequest updateRequest = new TraineeUpdateRequest(
                 "Johnny",
                 "Doeson",
                 LocalDate.of(1990, 1, 1),
@@ -146,19 +150,19 @@ class TraineeIntegrationTest {
                 .buildAndExpand(createdUsername)
                 .toUriString();
 
-        HttpEntity<TraineeDTO.Request.Update> updateEntity = new HttpEntity<>(updateRequest, authHeaders);
-        ResponseEntity<TraineeDTO.Response.Profile> updateResponse = restTemplate.exchange(
+        HttpEntity<TraineeUpdateRequest> updateEntity = new HttpEntity<>(updateRequest, authHeaders);
+        ResponseEntity<TraineeProfileResponse> updateResponse = restTemplate.exchange(
                 updateUrl,
                 HttpMethod.PUT,
                 updateEntity,
-                TraineeDTO.Response.Profile.class
+                TraineeProfileResponse.class
         );
 
         assertThat(updateResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        TraineeDTO.Response.Profile updatedProfile = updateResponse.getBody();
+        TraineeProfileResponse updatedProfile = updateResponse.getBody();
         assertThat(updatedProfile).isNotNull();
-        assertThat(updatedProfile.firstName()).isEqualTo("Johnny");
-        assertThat(updatedProfile.lastName()).isEqualTo("Doeson");
+        assertThat(updatedProfile.getFirstName()).isEqualTo("Johnny");
+        assertThat(updatedProfile.getLastName()).isEqualTo("Doeson");
 
         String deleteUrl = fromUriString(baseUrl + "/api/trainees/{username}")
                 .queryParam("password", createdPassword)
@@ -186,7 +190,7 @@ class TraineeIntegrationTest {
     @Test
     @DisplayName("Integration Test: Authentication and Password Change Flow")
     void shouldAuthenticateAndChangePassword() {
-        TraineeDTO.Request.Register registerRequest = new TraineeDTO.Request.Register(
+        TraineeRegistrationRequest registerRequest = new TraineeRegistrationRequest(
                 "Bob",
                 "Wilson",
                 LocalDate.of(1988, 3, 20),
@@ -195,30 +199,30 @@ class TraineeIntegrationTest {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<TraineeDTO.Request.Register> registerEntity = new HttpEntity<>(registerRequest, headers);
+        HttpEntity<TraineeRegistrationRequest> registerEntity = new HttpEntity<>(registerRequest, headers);
 
-        ResponseEntity<TraineeDTO.Response.Registered> registerResponse = restTemplate.postForEntity(
+        ResponseEntity<TraineeRegistrationResponse> registerResponse = restTemplate.postForEntity(
                 baseUrl + "/api/trainees/register",
                 registerEntity,
-                TraineeDTO.Response.Registered.class
+                TraineeRegistrationResponse.class
         );
 
         assertThat(registerResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        TraineeDTO.Response.Registered registered = registerResponse.getBody();
+        TraineeRegistrationResponse registered = registerResponse.getBody();
         assertThat(registered).isNotNull();
 
-        String username = registered.username();
-        String oldPassword = registered.password();
+        String username = registered.getUsername();
+        String oldPassword = registered.getPassword();
 
         String jwtToken = getJwtToken(username, oldPassword);
         assertThat(jwtToken).isNotNull();
 
         String newPassword = "newSecurePassword123";
-        AuthDTO.Request.ChangePassword changePasswordRequest =
-                new AuthDTO.Request.ChangePassword(oldPassword, newPassword);
+        ChangePasswordRequest changePasswordRequest =
+                new ChangePasswordRequest(username, oldPassword, newPassword);
 
         HttpHeaders authHeaders = createAuthHeaders(jwtToken);
-        HttpEntity<AuthDTO.Request.ChangePassword> changePasswordEntity =
+        HttpEntity<ChangePasswordRequest> changePasswordEntity =
                 new HttpEntity<>(changePasswordRequest, authHeaders);
 
         ResponseEntity<Void> changePasswordResponse = restTemplate.exchange(
@@ -239,24 +243,24 @@ class TraineeIntegrationTest {
                 .toUriString();
 
         HttpHeaders newAuthHeaders = createAuthHeaders(newJwtToken);
-        ResponseEntity<TraineeDTO.Response.Profile> profileResponse = restTemplate.exchange(
+        ResponseEntity<TraineeProfileResponse> profileResponse = restTemplate.exchange(
                 getProfileUrl,
                 HttpMethod.GET,
                 new HttpEntity<>(newAuthHeaders),
-                TraineeDTO.Response.Profile.class
+                TraineeProfileResponse.class
         );
 
         assertThat(profileResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        TraineeDTO.Response.Profile profile = profileResponse.getBody();
+        TraineeProfileResponse profile = profileResponse.getBody();
         assertThat(profile).isNotNull();
-        assertThat(profile.firstName()).isEqualTo("Bob");
-        assertThat(profile.lastName()).isEqualTo("Wilson");
+        assertThat(profile.getFirstName()).isEqualTo("Bob");
+        assertThat(profile.getLastName()).isEqualTo("Wilson");
     }
 
     @Test
     @DisplayName("Integration Test: Manage Trainee Trainers Relationship")
     void shouldManageTraineeTrainersRelationship() {
-        TraineeDTO.Request.Register traineeRequest = new TraineeDTO.Request.Register(
+        TraineeRegistrationRequest traineeRequest = new TraineeRegistrationRequest(
                 "Alice",
                 "Smith",
                 LocalDate.of(1995, 5, 15),
@@ -265,24 +269,24 @@ class TraineeIntegrationTest {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<TraineeDTO.Request.Register> registerEntity = new HttpEntity<>(traineeRequest, headers);
+        HttpEntity<TraineeRegistrationRequest> registerEntity = new HttpEntity<>(traineeRequest, headers);
 
-        ResponseEntity<TraineeDTO.Response.Registered> registerResponse = restTemplate.postForEntity(
+        ResponseEntity<TraineeRegistrationResponse> registerResponse = restTemplate.postForEntity(
                 baseUrl + "/api/trainees/register",
                 registerEntity,
-                TraineeDTO.Response.Registered.class
+                TraineeRegistrationResponse.class
         );
 
         assertThat(registerResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        TraineeDTO.Response.Registered trainee = registerResponse.getBody();
+        TraineeRegistrationResponse trainee = registerResponse.getBody();
         assertThat(trainee).isNotNull();
-        System.out.println("Created trainee: " + trainee.username());
+        System.out.println("Created trainee: " + trainee.getUsername());
 
-        String jwtToken = getJwtToken(trainee.username(), trainee.password());
+        String jwtToken = getJwtToken(trainee.getUsername(), trainee.getPassword());
         HttpHeaders authHeaders = createAuthHeaders(jwtToken);
 
         String unassignedUrl = fromUriString(baseUrl + "/api/trainees/{username}/trainers/unassigned")
-                .buildAndExpand(trainee.username())
+                .buildAndExpand(trainee.getUsername())
                 .toUriString();
 
         ResponseEntity<Object[]> unassignedResponse = restTemplate.exchange(

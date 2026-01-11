@@ -1,5 +1,7 @@
 package com.github.amangusss.gym_application.controller;
 
+import com.github.amangusss.dto.generated.ChangePasswordRequest;
+import com.github.amangusss.dto.generated.LoginRequest;
 import com.github.amangusss.gym_application.dto.auth.AuthDTO;
 import com.github.amangusss.gym_application.exception.GlobalExceptionHandler;
 import com.github.amangusss.gym_application.jwt.JwtAuthenticationFilter;
@@ -128,7 +130,7 @@ class AuthControllerTest {
     @WithMockUser(username = "john", roles = "USER")
     @DisplayName("Should return 200 OK when password changed successfully")
     void shouldReturnOkWhenPasswordChangedSuccessfully() throws Exception {
-        AuthDTO.Request.ChangePassword changePasswordRequest =
+        ChangePasswordRequest changePasswordRequest =
                 createChangePasswordRequest(OLD_PASSWORD);
 
         mockMvc.perform(put(CHANGE_PASSWORD_ENDPOINT)
@@ -144,7 +146,7 @@ class AuthControllerTest {
     @WithMockUser(username = "john", roles = "USER")
     @DisplayName("Should return 401 Unauthorized when password change fails")
     void shouldReturnUnauthorizedWhenPasswordChangeFails() throws Exception {
-        AuthDTO.Request.ChangePassword changePasswordRequest =
+        ChangePasswordRequest changePasswordRequest =
                 createChangePasswordRequest(INVALID_PASSWORD);
 
         doThrow(new BadCredentialsException("Invalid old password"))
@@ -183,11 +185,11 @@ class AuthControllerTest {
                 "Password should match the request parameter");
     }
 
-    private AuthDTO.Request.Login createLoginRequest() {
-        return new AuthDTO.Request.Login(VALID_USERNAME, VALID_PASSWORD);
+    private LoginRequest createLoginRequest() {
+        return new LoginRequest(VALID_USERNAME, VALID_PASSWORD);
     }
 
-    private AuthDTO.Request.ChangePassword createChangePasswordRequest(String oldPassword) {
-        return new AuthDTO.Request.ChangePassword(oldPassword, NEW_PASSWORD);
+    private ChangePasswordRequest createChangePasswordRequest(String oldPassword) {
+        return new ChangePasswordRequest(VALID_USERNAME, oldPassword, NEW_PASSWORD);
     }
 }
