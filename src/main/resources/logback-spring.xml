@@ -23,6 +23,7 @@
     </appender>
 
     <logger name="com.github.amangusss.gym_application" level="DEBUG"/>
+
     <logger name="org.springframework" level="INFO"/>
 
     <logger name="org.hibernate" level="WARN" additivity="false">
@@ -41,7 +42,25 @@
         <appender-ref ref="FILE"/>
     </logger>
 
-    <root level="DEBUG">
+    <logger name="com.netflix.discovery" level="WARN" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+    <logger name="com.netflix.discovery.shared.resolver" level="WARN" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <logger name="org.apache.hc.client5" level="WARN" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+    <logger name="org.apache.http" level="WARN" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <logger name="org.apache.activemq" level="INFO" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </root>

@@ -127,24 +127,28 @@ class TrainingMetricsTest {
     }
 
     @Test
-    @DisplayName("Should record training with status success tag")
+    @DisplayName("Should record training with isActive success tag")
     void shouldRecordTrainingWithStatusSuccessTag() {
         trainingMetrics.incrementTrainingCreated();
 
         Counter counter = meterRegistry.find("training.operations")
-                .tag("status", "success")
+                .tag("type", "training")
+                .tag("isActive", "success")
+                .tag("operation", "create")
                 .counter();
         assertThat(counter).isNotNull();
         assertThat(counter.count()).isGreaterThan(0);
     }
 
     @Test
-    @DisplayName("Should record training with status failure tag")
+    @DisplayName("Should record training with isActive failure tag")
     void shouldRecordTrainingWithStatusFailureTag() {
         trainingMetrics.incrementTrainingFailed();
 
         Counter counter = meterRegistry.find("training.operations")
-                .tag("status", "failure")
+                .tag("type", "training")
+                .tag("isActive", "failure")
+                .tag("operation", "create")
                 .counter();
         assertThat(counter).isNotNull();
         assertThat(counter.count()).isGreaterThan(0);

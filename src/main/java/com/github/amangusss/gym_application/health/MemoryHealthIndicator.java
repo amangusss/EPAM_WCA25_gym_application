@@ -32,7 +32,7 @@ public class MemoryHealthIndicator implements HealthIndicator {
                     .withDetail("usedMemory", formatBytes(usedMemory))
                     .withDetail("maxMemory", formatBytes(maxMemory))
                     .withDetail("freeMemory", formatBytes(maxMemory - usedMemory))
-                    .withDetail("status", "Healthy")
+                    .withDetail("isActive", "Healthy")
                     .build();
         } else {
             log.warn("Memory usage is critically high: {}%", String.format("%.2f", memoryUsage * 100));
@@ -41,7 +41,7 @@ public class MemoryHealthIndicator implements HealthIndicator {
                     .withDetail("usedMemory", formatBytes(usedMemory))
                     .withDetail("maxMemory", formatBytes(maxMemory))
                     .withDetail("freeMemory", formatBytes(maxMemory - usedMemory))
-                    .withDetail("status", "Critical - Memory usage too high")
+                    .withDetail("isActive", "Critical - Memory usage too high")
                     .build();
         }
     }

@@ -9,6 +9,7 @@ import com.github.amangusss.gym_application.entity.training.Training;
 import com.github.amangusss.gym_application.exception.TraineeNotFoundException;
 import com.github.amangusss.gym_application.exception.TrainerNotFoundException;
 import com.github.amangusss.gym_application.exception.ValidationException;
+import com.github.amangusss.gym_application.jms.service.WorkloadMessageProducer;
 import com.github.amangusss.gym_application.repository.TraineeRepository;
 import com.github.amangusss.gym_application.repository.TrainerRepository;
 import com.github.amangusss.gym_application.repository.TrainingRepository;
@@ -74,6 +75,9 @@ class TrainingServiceTest {
     @Mock
     private EntityValidator entityValidator;
 
+    @Mock
+    private WorkloadMessageProducer workloadMessageProducer;
+
     @InjectMocks
     private TrainingServiceImpl trainingService;
 
@@ -84,7 +88,7 @@ class TrainingServiceTest {
 
     @BeforeEach
     void setUp() {
-        Mockito.reset(trainingRepository, traineeRepository, trainerRepository, entityValidator);
+        Mockito.reset(trainingRepository, traineeRepository, trainerRepository, entityValidator, workloadMessageProducer);
 
         TrainingType testTrainingType = TrainingType.builder()
                 .id(TRAINING_TYPE_ID)
@@ -146,11 +150,13 @@ class TrainingServiceTest {
                 .thenReturn(Optional.of(testTrainer));
         doNothing().when(entityValidator).validateTraining(any());
         when(trainingRepository.save(any(Training.class))).thenReturn(testTraining);
+        doNothing().when(workloadMessageProducer).sendWorkloadMessage(any(), any());
 
         trainingService.addTraining(createRequest);
 
         verify(entityValidator, times(1)).validateTraining(any());
         verify(trainingRepository, times(1)).save(any(Training.class));
+        verify(workloadMessageProducer, times(1)).sendWorkloadMessage(any(), any());
     }
 
     @Test

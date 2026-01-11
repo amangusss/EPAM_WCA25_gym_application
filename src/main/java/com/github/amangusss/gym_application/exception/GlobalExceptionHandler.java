@@ -4,6 +4,7 @@ import com.github.amangusss.gym_application.dto.error.ErrorResponse;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -19,7 +20,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationError(MethodArgumentNotValidException ex) {
-        String transactionId = UUID.randomUUID().toString();
+        String transactionId = MDC.get("transactionId");
 
         StringBuilder errorMessages = new StringBuilder();
         ex.getBindingResult().getFieldErrors().forEach(error -> {
@@ -41,7 +42,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthenticationError(AuthenticationException ex) {
-        String transactionId = UUID.randomUUID().toString();
+        String transactionId = MDC.get("transactionId");
         log.error("[Transaction: {}] Authentication error: {}", transactionId, ex.getMessage());
 
         ErrorResponse error = new ErrorResponse("Authentication Error", ex.getMessage());
@@ -50,7 +51,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(TraineeNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleTraineeNotFound(TraineeNotFoundException ex) {
-        String transactionId = UUID.randomUUID().toString();
+        String transactionId = MDC.get("transactionId");
         log.error("[Transaction: {}] Trainee not found: {}", transactionId, ex.getMessage());
 
         ErrorResponse error = new ErrorResponse("Trainee Not Found", ex.getMessage());
@@ -59,7 +60,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(TrainerNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleTrainerNotFound(TrainerNotFoundException ex) {
-        String transactionId = UUID.randomUUID().toString();
+        String transactionId = MDC.get("transactionId");
         log.error("[Transaction: {}] Trainer not found: {}", transactionId, ex.getMessage());
 
         ErrorResponse error = new ErrorResponse("Trainer Not Found", ex.getMessage());
@@ -68,7 +69,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(TrainingTypeNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleTrainingTypeNotFound(TrainingTypeNotFoundException ex) {
-        String transactionId = UUID.randomUUID().toString();
+        String transactionId = MDC.get("transactionId");
         log.error("[Transaction: {}] Training type not found: {}", transactionId, ex.getMessage());
 
         ErrorResponse error = new ErrorResponse("Training Type Not Found", ex.getMessage());
@@ -77,7 +78,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(TrainingNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleTrainingNotFound(TrainingNotFoundException ex) {
-        String transactionId = UUID.randomUUID().toString();
+        String transactionId = MDC.get("transactionId");
         log.error("[Transaction: {}] Training not found: {}", transactionId, ex.getMessage());
 
         ErrorResponse error = new ErrorResponse("Training Not Found", ex.getMessage());
@@ -86,7 +87,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(ValidationException ex) {
-        String transactionId = UUID.randomUUID().toString();
+        String transactionId = MDC.get("transactionId");
         log.error("[Transaction: {}] Validation error: {}", transactionId, ex.getMessage());
 
         ErrorResponse error = new ErrorResponse("Validation Error", ex.getMessage());
@@ -95,7 +96,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
-        String transactionId = UUID.randomUUID().toString();
+        String transactionId = MDC.get("transactionId");
         log.error("[Transaction: {}] Illegal argument: {}", transactionId, ex.getMessage());
 
         ErrorResponse error = new ErrorResponse("Bad Request", ex.getMessage());
@@ -104,7 +105,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
-        String transactionId = UUID.randomUUID().toString();
+        String transactionId = MDC.get("transactionId");
         log.error("[Transaction: {}] Bad credentials: {}", transactionId, ex.getMessage());
 
         ErrorResponse error = new ErrorResponse("Authentication Failed", ex.getMessage());

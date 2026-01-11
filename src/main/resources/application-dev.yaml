@@ -26,5 +26,5 @@ spring:
 logging:
   level:
     org.springframework: INFO
-    com.github.amangusss: DEBUG
-    org.hibernate.SQL: DEBUG
+    com.github.amangusss: INFO
+    org.hibernate.SQL: WARN

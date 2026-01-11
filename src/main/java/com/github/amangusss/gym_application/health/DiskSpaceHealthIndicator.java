@@ -30,7 +30,7 @@ public class DiskSpaceHealthIndicator implements HealthIndicator {
                     .withDetail("usedSpace", formatBytes(usedSpace))
                     .withDetail("usagePercentage", String.format("%.2f%%", usagePercentage))
                     .withDetail("threshold", formatBytes(DISK_SPACE_THRESHOLD_GB))
-                    .withDetail("status", "Healthy")
+                    .withDetail("isActive", "Healthy")
                     .build();
         } else {
             log.warn("Disk space is critically low: {} free", formatBytes(freeSpace));
@@ -40,7 +40,7 @@ public class DiskSpaceHealthIndicator implements HealthIndicator {
                     .withDetail("usedSpace", formatBytes(usedSpace))
                     .withDetail("usagePercentage", String.format("%.2f%%", usagePercentage))
                     .withDetail("threshold", formatBytes(DISK_SPACE_THRESHOLD_GB))
-                    .withDetail("status", "Critical - Low disk space")
+                    .withDetail("isActive", "Critical - Low disk space")
                     .build();
         }
     }

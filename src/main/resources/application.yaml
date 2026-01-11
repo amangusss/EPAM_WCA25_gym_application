@@ -48,6 +48,19 @@ spring:
     ansi:
       enabled: always
 
+  activemq:
+    broker-url: ${SPRING_ACTIVEMQ_BROKER_URL:tcp://localhost:61616}
+    user: ${SPRING_ACTIVEMQ_USER:admin}
+    password: ${SPRING_ACTIVEMQ_PASSWORD:admin}
+    packages:
+      trust-all: true
+
+app:
+  jms:
+    queue:
+      workload: workload.queue
+      workload-dlq: workload.dlq
+
 logging:
   level:
     org.springframework: INFO
@@ -92,7 +105,7 @@ resilience4j:
   circuitbreaker:
     instances:
       workload-service:
-        failure-rate-threshold: 50
+        failure-rate-threshold: 1
         wait-duration-in-open-state: 30s
         sliding-window-size: 10
         minimum-number-of-calls: 5

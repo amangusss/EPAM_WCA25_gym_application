@@ -221,7 +221,7 @@ class TrainerServiceTest {
     }
 
     @Test
-    @DisplayName("Should update trainer status successfully when updating status")
+    @DisplayName("Should update trainer isActive successfully when updating isActive")
     void shouldUpdateTrainerStatusSuccessfullyWhenUpdatingStatus() {
         when(trainerRepository.findByUserUsername(USERNAME))
                 .thenReturn(Optional.of(testTrainer));

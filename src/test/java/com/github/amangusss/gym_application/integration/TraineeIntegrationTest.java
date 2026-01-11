@@ -2,6 +2,8 @@ package com.github.amangusss.gym_application.integration;
 
 import com.github.amangusss.gym_application.dto.trainee.TraineeDTO;
 import com.github.amangusss.gym_application.dto.auth.AuthDTO;
+import com.github.amangusss.gym_application.jms.listener.WorkloadDlqListener;
+import com.github.amangusss.gym_application.jms.service.WorkloadMessageProducer;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -40,6 +43,12 @@ class TraineeIntegrationTest {
     private TestRestTemplate restTemplate;
 
     private String baseUrl;
+
+    @MockitoBean
+    private WorkloadMessageProducer workloadMessageProducer;
+
+    @MockitoBean
+    private WorkloadDlqListener workloadDlqListener;
 
     @BeforeEach
     void setUp() {

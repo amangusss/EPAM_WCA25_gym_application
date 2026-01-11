@@ -128,14 +128,14 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     public void updateTraineeStatus(String username, boolean isActive) {
-        log.debug("Updating trainee status for: {} to isActive: {}", username, isActive);
+        log.debug("Updating trainee isActive for: {} to isActive: {}", username, isActive);
 
         Trainee trainee = traineeRepository.findByUserUsername(username)
                 .orElseThrow(() -> new TraineeNotFoundException("Trainee not found with username: " + username));
         trainee.getUser().setActive(isActive);
         traineeRepository.save(trainee);
         
-        log.info("Successfully updated trainee status for: {}", username);
+        log.info("Successfully updated trainee isActive for: {}", username);
     }
 
     @Override

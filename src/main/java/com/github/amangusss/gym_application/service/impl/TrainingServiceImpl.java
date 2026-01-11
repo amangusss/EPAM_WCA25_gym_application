@@ -1,7 +1,6 @@
 package com.github.amangusss.gym_application.service.impl;
 
-import com.github.amangusss.gym_application.client.WorkloadServiceClient;
-import com.github.amangusss.gym_application.client.dto.workload.WorkloadDTO;
+import com.github.amangusss.gym_application.dto.workload.WorkloadDTO;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
 import com.github.amangusss.gym_application.entity.trainee.Trainee;
 import com.github.amangusss.gym_application.entity.trainer.Trainer;
@@ -9,6 +8,7 @@ import com.github.amangusss.gym_application.entity.training.Training;
 import com.github.amangusss.gym_application.exception.TraineeNotFoundException;
 import com.github.amangusss.gym_application.exception.TrainerNotFoundException;
 import com.github.amangusss.gym_application.exception.TrainingNotFoundException;
+import com.github.amangusss.gym_application.jms.service.WorkloadMessageProducer;
 import com.github.amangusss.gym_application.repository.TraineeRepository;
 import com.github.amangusss.gym_application.repository.TrainerRepository;
 import com.github.amangusss.gym_application.repository.TrainingRepository;
@@ -35,11 +35,11 @@ public class TrainingServiceImpl implements TrainingService {
     TraineeRepository traineeRepository;
     TrainerRepository trainerRepository;
     EntityValidator entityValidator;
-    WorkloadServiceClient workloadServiceClient;
+    WorkloadMessageProducer workloadMessageProducer;
 
     @Override
     public void addTraining(TrainingDTO.Request.Create request) {
-        String transactionId = MDC.get("transactionId");
+        String transactionId = getTransactionId();
 
         log.debug("[{}] Adding new training: {} for trainee: {} and trainer: {}",
                 transactionId, request.trainingName(), request.traineeUsername(), request.trainerUsername());
@@ -67,7 +67,7 @@ public class TrainingServiceImpl implements TrainingService {
 
         trainingRepository.save(training);
 
-        sendWorkload(trainer, training, "ADD", transactionId);
+        sendWorkload(trainer, training, WorkloadDTO.ActionType.ADD, transactionId);
 
         log.info("Successfully added training: {} for trainee: {} and trainer: {}",
                 training.getTrainingName(), trainee.getUser().getUsername(), trainer.getUser().getUsername());
@@ -75,7 +75,7 @@ public class TrainingServiceImpl implements TrainingService {
 
     @Override
     public void deleteTraining(Long trainingId) {
-        String transactionId = MDC.get("transactionId");
+        String transactionId = getTransactionId();
 
         log.debug("[{}] Deleting training with id: {}", transactionId, trainingId);
 
@@ -84,7 +84,7 @@ public class TrainingServiceImpl implements TrainingService {
 
         Trainer trainer = training.getTrainer();
 
-        sendWorkload(trainer, training, "DELETE", transactionId);
+        sendWorkload(trainer, training, WorkloadDTO.ActionType.DELETE, transactionId);
 
         trainingRepository.delete(training);
 
@@ -92,17 +92,22 @@ public class TrainingServiceImpl implements TrainingService {
                 transactionId, training.getTrainingName(), trainingId);
     }
 
-    private void sendWorkload(Trainer trainer, Training training, String actionType, String transactionId) {
-        WorkloadDTO.Request.Workload workloadRequest = WorkloadDTO.Request.Workload.builder()
+    private void sendWorkload(Trainer trainer, Training training, WorkloadDTO.ActionType actionType, String transactionId) {
+        WorkloadDTO.Request.Workload workload = WorkloadDTO.Request.Workload.builder()
                 .username(trainer.getUser().getUsername())
                 .firstName(trainer.getUser().getFirstName())
                 .lastName(trainer.getUser().getLastName())
-                .status(trainer.getUser().isActive() ? "active" : "inactive")
+                .isActive(trainer.getUser().isActive())
                 .trainingDate(training.getTrainingDate())
                 .trainingDuration(training.getTrainingDuration())
                 .actionType(actionType)
                 .build();
 
-        workloadServiceClient.sendWorkload(workloadRequest, transactionId);
+        workloadMessageProducer.sendWorkloadMessage(workload, transactionId);
+    }
+
+    private String getTransactionId() {
+        String transactionId = MDC.get("transactionId");
+        return transactionId != null ? transactionId : "NO_TX";
     }
 }

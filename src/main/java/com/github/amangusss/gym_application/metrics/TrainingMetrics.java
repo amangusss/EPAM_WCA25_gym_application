@@ -27,21 +27,21 @@ public class TrainingMetrics {
         this.trainingCreatedCounter = Counter.builder("training.operations")
                 .description("Training operations counter")
                 .tag("type", "training")
-                .tag("status", "success")
+                .tag("isActive", "success")
                 .tag("operation", "create")
                 .register(meterRegistry);
 
         this.trainingDeletedCounter = Counter.builder("training.operations")
                 .description("Training operations counter")
                 .tag("type", "training")
-                .tag("status", "success")
+                .tag("isActive", "success")
                 .tag("operation", "delete")
                 .register(meterRegistry);
 
         this.trainingFailedCounter = Counter.builder("training.operations")
                 .description("Training operations counter")
                 .tag("type", "training")
-                .tag("status", "failure")
+                .tag("isActive", "failure")
                 .tag("operation", "create")
                 .register(meterRegistry);
 
@@ -74,7 +74,7 @@ public class TrainingMetrics {
         Counter.builder("training.failed.by_reason")
                 .description("Training failures by reason")
                 .tag("reason", reason)
-                .tag("status", "failure")
+                .tag("isActive", "failure")
                 .register(meterRegistry)
                 .increment();
     }
