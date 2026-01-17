@@ -1,7 +1,9 @@
 package com.github.amangusss.gym_application.controller;
 
+import com.github.amangusss.dto.generated.TrainingCreateRequest;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
 import com.github.amangusss.gym_application.jwt.JwtUtils;
+import com.github.amangusss.gym_application.mapper.openapi.OpenApiTrainingMapper;
 import com.github.amangusss.gym_application.metrics.ApiPerformanceMetrics;
 import com.github.amangusss.gym_application.metrics.MetricsExecutor;
 import com.github.amangusss.gym_application.metrics.TrainingMetrics;
@@ -93,6 +95,9 @@ class TrainingControllerTest {
     @MockitoBean
     private MetricsExecutor metricsExecutor;
 
+    @MockitoBean
+    private OpenApiTrainingMapper openApiTrainingMapper;
+
     @TestConfiguration
     static class TestConfig {
         @Bean
@@ -103,7 +108,7 @@ class TrainingControllerTest {
 
     @BeforeEach
     void setUp() {
-        reset(trainingService, trainingMetrics, apiPerformanceMetrics, metricsExecutor);
+        reset(trainingService, trainingMetrics, apiPerformanceMetrics, metricsExecutor, openApiTrainingMapper);
 
         when(metricsExecutor.executeWithMetrics(any(), any(), any(), any()))
                 .thenAnswer(invocation -> {
@@ -121,17 +126,29 @@ class TrainingControllerTest {
             }
             return null;
         }).when(metricsExecutor).executeVoidWithMetrics(any(), any(), any(), any());
+
+        when(openApiTrainingMapper.toInternalTrainingCreate(any()))
+                .thenAnswer(invocation -> {
+                    com.github.amangusss.dto.generated.TrainingCreateRequest request = invocation.getArgument(0);
+                    return new TrainingDTO.Request.Create(
+                            request.getTraineeUsername(),
+                            request.getTrainerUsername(),
+                            request.getTrainingName(),
+                            request.getTrainingDate(),
+                            request.getTrainingDuration()
+                    );
+                });
     }
 
     @Test
     @DisplayName("Should return 200 OK when adding training successfully")
     void shouldReturnOkWhenAddingTrainingSuccessfully() throws Exception {
-        TrainingDTO.Request.Create createRequest = createValidTrainingRequest();
+        TrainingCreateRequest createRequest = createValidTrainingRequest();
         doNothing().when(trainingService).addTraining(any(TrainingDTO.Request.Create.class));
         doNothing().when(trainingMetrics).incrementTrainingCreated();
         doNothing().when(trainingMetrics).recordTrainingByTrainer(any(String.class));
         doNothing().when(trainingMetrics).recordTrainingByTrainee(any(String.class));
-        doNothing().when(trainingMetrics).recordTrainingDuration(any(Long.class), any(String.class));
+        doNothing().when(trainingMetrics).recordTrainingDuration(any(Double.class), any(String.class));
 
         mockMvc.perform(post(TRAININGS_ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -148,7 +165,7 @@ class TrainingControllerTest {
     @Test
     @DisplayName("Should return 400 Bad Request when trainer username is null")
     void shouldReturnBadRequestWhenTrainerUsernameIsNull() throws Exception {
-        TrainingDTO.Request.Create invalidRequest = createTrainingRequestWithNullTrainerUsername();
+        TrainingCreateRequest invalidRequest = createTrainingRequestWithNullTrainerUsername();
 
         mockMvc.perform(post(TRAININGS_ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -162,7 +179,7 @@ class TrainingControllerTest {
     @Test
     @DisplayName("Should return 400 Bad Request when trainee username is null")
     void shouldReturnBadRequestWhenTraineeUsernameIsNull() throws Exception {
-        TrainingDTO.Request.Create invalidRequest = createTrainingRequestWithNullTraineeUsername();
+        TrainingCreateRequest invalidRequest = createTrainingRequestWithNullTraineeUsername();
 
         mockMvc.perform(post(TRAININGS_ENDPOINT)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -173,8 +190,8 @@ class TrainingControllerTest {
         verify(trainingMetrics, never()).incrementTrainingCreated();
     }
 
-    private TrainingDTO.Request.Create createValidTrainingRequest() {
-        return new TrainingDTO.Request.Create(
+    private TrainingCreateRequest createValidTrainingRequest() {
+        return new TrainingCreateRequest(
                 TRAINEE_USERNAME,
                 TRAINER_USERNAME,
                 TRAINING_NAME,
@@ -183,8 +200,8 @@ class TrainingControllerTest {
         );
     }
 
-    private TrainingDTO.Request.Create createTrainingRequestWithNullTrainerUsername() {
-        return new TrainingDTO.Request.Create(
+    private TrainingCreateRequest createTrainingRequestWithNullTrainerUsername() {
+        return new TrainingCreateRequest(
                 TRAINEE_USERNAME,
                 null,
                 TRAINING_NAME,
@@ -193,8 +210,8 @@ class TrainingControllerTest {
         );
     }
 
-    private TrainingDTO.Request.Create createTrainingRequestWithNullTraineeUsername() {
-        return new TrainingDTO.Request.Create(
+    private TrainingCreateRequest createTrainingRequestWithNullTraineeUsername() {
+        return new TrainingCreateRequest(
                 null,
                 TRAINER_USERNAME,
                 TRAINING_NAME,

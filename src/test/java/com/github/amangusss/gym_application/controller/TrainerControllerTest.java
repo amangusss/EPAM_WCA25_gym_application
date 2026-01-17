@@ -1,6 +1,9 @@
 package com.github.amangusss.gym_application.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.amangusss.dto.generated.TrainerUpdateStatusRequest;
+import com.github.amangusss.dto.generated.TrainerRegistrationRequest;
+import com.github.amangusss.dto.generated.TrainerUpdateRequest;
 import com.github.amangusss.gym_application.dto.trainer.TrainerDTO;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
 import com.github.amangusss.gym_application.jms.listener.WorkloadDlqListener;
@@ -128,7 +131,7 @@ class TrainerControllerTest {
     @Test
     @DisplayName("Should return 200 OK and registered response when trainer registers successfully")
     void shouldReturnOkAndRegisteredResponseWhenTrainerRegistersSuccessfully() throws Exception {
-        TrainerDTO.Request.Register registerRequest = createRegisterRequest();
+        TrainerRegistrationRequest registerRequest = createRegisterRequest();
         TrainerDTO.Response.Registered expectedResponse = createRegisteredResponse();
         when(trainerService.registerTrainer(any(TrainerDTO.Request.Register.class))).thenReturn(expectedResponse);
 
@@ -153,7 +156,7 @@ class TrainerControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.firstName").value(TRAINER_FIRST_NAME))
                 .andExpect(jsonPath("$.lastName").value(TRAINER_LAST_NAME))
-                .andExpect(jsonPath("$.specializationName").value(SPECIALIZATION_NAME));
+                .andExpect(jsonPath("$.specialization").value(SPECIALIZATION_NAME));
 
         verify(trainerService, times(1)).getTrainerProfile(TRAINER_USERNAME);
     }
@@ -161,7 +164,7 @@ class TrainerControllerTest {
     @Test
     @DisplayName("Should return 200 OK and updated response when trainer updates successfully")
     void shouldReturnOkAndUpdatedResponseWhenTrainerUpdatesSuccessfully() throws Exception {
-        TrainerDTO.Request.Update updateRequest = createUpdateRequest();
+        TrainerUpdateRequest updateRequest = createUpdateRequest();
         TrainerDTO.Response.Updated expectedResponse = createUpdatedResponse();
         when(trainerService.updateTrainerProfile(any(TrainerDTO.Request.Update.class), eq(TRAINER_USERNAME)))
                 .thenReturn(expectedResponse);
@@ -171,7 +174,8 @@ class TrainerControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value(TRAINER_USERNAME));
+                .andExpect(jsonPath("$.firstName").value(TRAINER_FIRST_NAME))
+                .andExpect(jsonPath("$.lastName").value(TRAINER_LAST_NAME));
 
         verify(trainerService, times(1)).updateTrainerProfile(any(TrainerDTO.Request.Update.class), eq(TRAINER_USERNAME));
     }
@@ -180,7 +184,7 @@ class TrainerControllerTest {
     @DisplayName("Should return 200 OK when updating trainer isActive successfully")
     void shouldReturnOkWhenUpdatingTrainerStatusSuccessfully() throws Exception {
         boolean newStatus = true;
-        TrainerDTO.Request.UpdateStatus statusRequest = new TrainerDTO.Request.UpdateStatus(newStatus);
+        TrainerUpdateStatusRequest statusRequest = new TrainerUpdateStatusRequest(newStatus);
 
         mockMvc.perform(patch(ACTIVATE_ENDPOINT, TRAINER_USERNAME)
                         .with(authentication(createAuthentication(TRAINER_USERNAME)))
@@ -212,8 +216,8 @@ class TrainerControllerTest {
                 TRAINER_USERNAME, PERIOD_FROM, PERIOD_TO, TRAINEE_NAME);
     }
 
-    private TrainerDTO.Request.Register createRegisterRequest() {
-        return new TrainerDTO.Request.Register(
+    private TrainerRegistrationRequest createRegisterRequest() {
+        return new TrainerRegistrationRequest(
                 TRAINER_FIRST_NAME, TRAINER_LAST_NAME, SPECIALIZATION_ID
         );
     }
@@ -228,8 +232,8 @@ class TrainerControllerTest {
         );
     }
 
-    private TrainerDTO.Request.Update createUpdateRequest() {
-        return new TrainerDTO.Request.Update(
+    private TrainerUpdateRequest createUpdateRequest() {
+        return new TrainerUpdateRequest(
                 TRAINER_FIRST_NAME, TRAINER_LAST_NAME, SPECIALIZATION_ID, true
         );
     }

@@ -1,0 +1,442 @@
+components:
+  schemas:
+    TraineeRegistrationRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - dateOfBirth
+        - address
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Trainee's first name
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Trainee's last name
+        dateOfBirth:
+          type: string
+          format: date
+          description: Trainee's date of birth
+        address:
+          type: string
+          maxLength: 200
+          description: Trainee's address
+
+    TraineeRegistrationResponse:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: Generated username for the trainee
+        password:
+          type: string
+          description: Generated password for the trainee
+
+    TraineeUpdateRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - dateOfBirth
+        - address
+        - isActive
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Trainee's first name
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Trainee's last name
+        dateOfBirth:
+          type: string
+          format: date
+          description: Trainee's date of birth
+        address:
+          type: string
+          maxLength: 200
+          description: Trainee's address
+        isActive:
+          type: boolean
+          description: Account active status
+
+    TraineeProfileResponse:
+      type: object
+      properties:
+        firstName:
+          type: string
+          description: Trainee's first name
+        lastName:
+          type: string
+          description: Trainee's last name
+        dateOfBirth:
+          type: string
+          format: date
+          description: Trainee's date of birth
+        address:
+          type: string
+          description: Trainee's address
+        isActive:
+          type: boolean
+          description: Account active status
+        trainers:
+          type: array
+          description: List of assigned trainers
+          items:
+            $ref: '#/components/schemas/TrainerBasicInfo'
+
+    TraineeUpdateStatusRequest:
+      type: object
+      required:
+        - isActive
+      properties:
+        isActive:
+          type: boolean
+          description: New active status
+
+    TraineeUpdateTrainersRequest:
+      type: object
+      required:
+        - trainerUsernames
+      properties:
+        trainerUsernames:
+          type: array
+          description: List of trainer usernames to assign
+          items:
+            type: string
+
+    TrainerRegistrationRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - specializationId
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Trainer's first name
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Trainer's last name
+        specializationId:
+          type: integer
+          format: int64
+          description: Training type specialization ID
+
+    TrainerRegistrationResponse:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: Generated username for the trainer
+        password:
+          type: string
+          description: Generated password for the trainer
+
+    TrainerUpdateRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - specializationId
+        - isActive
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Trainer's first name
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Trainer's last name
+        specializationId:
+          type: integer
+          format: int64
+          description: Training type specialization ID
+        isActive:
+          type: boolean
+          description: Account active status
+
+    TrainerProfileResponse:
+      type: object
+      properties:
+        firstName:
+          type: string
+          description: Trainer's first name
+        lastName:
+          type: string
+          description: Trainer's last name
+        specialization:
+          type: string
+          description: Training specialization name
+        isActive:
+          type: boolean
+          description: Account active status
+        trainees:
+          type: array
+          description: List of assigned trainees
+          items:
+            $ref: '#/components/schemas/TraineeBasicInfo'
+
+    TrainerUpdateStatusRequest:
+      type: object
+      required:
+        - isActive
+      properties:
+        isActive:
+          type: boolean
+          description: New active status
+
+    TrainerBasicInfo:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Trainer's username
+        firstName:
+          type: string
+          description: Trainer's first name
+        lastName:
+          type: string
+          description: Trainer's last name
+        specialization:
+          type: string
+          description: Training specialization
+
+    TrainerUnassignedResponse:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Trainer's username
+        firstName:
+          type: string
+          description: Trainer's first name
+        lastName:
+          type: string
+          description: Trainer's last name
+        specialization:
+          type: string
+          description: Training specialization
+
+    TrainingCreateRequest:
+      type: object
+      required:
+        - traineeUsername
+        - trainerUsername
+        - trainingName
+        - trainingDate
+        - trainingDuration
+      properties:
+        traineeUsername:
+          type: string
+          description: Username of the trainee
+        trainerUsername:
+          type: string
+          description: Username of the trainer
+        trainingName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Name of the training session
+        trainingDate:
+          type: string
+          format: date
+          description: Date of the training
+        trainingDuration:
+          type: number
+          format: double
+          minimum: 0.1
+          description: Duration in hours
+
+    TrainingResponse:
+      type: object
+      properties:
+        trainingName:
+          type: string
+          description: Name of the training session
+        trainingDate:
+          type: string
+          format: date
+          description: Date of the training
+        trainingType:
+          type: string
+          description: Type of training
+        trainingDuration:
+          type: number
+          format: double
+          description: Duration in hours
+        trainerName:
+          type: string
+          description: Full name of the trainer
+
+    TraineeTrainingResponse:
+      type: object
+      properties:
+        trainingName:
+          type: string
+          description: Name of the training session
+        trainingDate:
+          type: string
+          format: date
+          description: Date of the training
+        trainingType:
+          type: string
+          description: Type of training
+        trainingDuration:
+          type: number
+          format: double
+          description: Duration in hours
+        trainerName:
+          type: string
+          description: Full name of the trainer
+
+    TrainerTrainingResponse:
+      type: object
+      properties:
+        trainingName:
+          type: string
+          description: Name of the training session
+        trainingDate:
+          type: string
+          format: date
+          description: Date of the training
+        trainingType:
+          type: string
+          description: Type of training
+        trainingDuration:
+          type: number
+          format: double
+          description: Duration in hours
+        traineeName:
+          type: string
+          description: Full name of the trainee
+
+    UserCredentialsResponse:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: User's username
+        password:
+          type: string
+          description: User's password
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: User's username
+        password:
+          type: string
+          minLength: 1
+          description: User's password
+
+    LoginResponse:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: JWT authentication token
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - username
+        - oldPassword
+        - newPassword
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: User's username
+        oldPassword:
+          type: string
+          minLength: 1
+          description: Current password
+        newPassword:
+          type: string
+          minLength: 8
+          description: New password (minimum 8 characters)
+
+    TraineeBasicInfo:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Trainee's username
+        firstName:
+          type: string
+          description: Trainee's first name
+        lastName:
+          type: string
+          description: Trainee's last name
+
+    TrainingTypeResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Training type ID
+        trainingTypeName:
+          type: string
+          description: Name of the training type
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the error
+        status:
+          type: integer
+          description: HTTP status code
+        error:
+          type: string
+          description: Error type
+        message:
+          type: string
+          description: Detailed error message
+        path:
+          type: string
+          description: Request path that caused the error
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT authentication token
+

@@ -1,0 +1,552 @@
+openapi: 3.0.3
+
+info:
+  title: Gym Application API
+  version: 1.0.0
+  description: API for managing gym trainers, trainees and their workouts.
+  contact:
+    name: Aman Nazarkulov
+    email: aman_nazarkulov@epam.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: Trainee
+    description: Trainee management operations
+  - name: Trainer
+    description: Trainer management operations
+  - name: Training
+    description: Training session operations
+  - name: Training Type
+    description: Training type operations
+  - name: Authentication
+    description: Authentication and authorization operations
+
+paths:
+  /api/trainees/register:
+    post:
+      operationId: registerTrainee
+      summary: Register new trainee
+      description: Creates a new trainee profile and generates username and password
+      tags:
+        - Trainee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/components/schemas/TraineeRegistrationRequest'
+      responses:
+        '200':
+          description: Trainee registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: './schemas.yaml#/components/schemas/TraineeRegistrationResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: 'schemas.yaml#/components/schemas/ErrorResponse'
+
+  /api/trainees/profile:
+    get:
+      operationId: getCurrentTraineeProfile
+      summary: Get current trainee profile
+      description: Retrieves the profile of the currently authenticated trainee
+      tags:
+        - Trainee
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './schemas.yaml#/components/schemas/TraineeProfileResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: './schemas.yaml#/components/schemas/ErrorResponse'
+
+  /api/trainees/{username}:
+    get:
+      operationId: getTraineeProfile
+      summary: Get trainee profile by username
+      tags:
+        - Trainee
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: './schemas.yaml#/components/schemas/TraineeProfileResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+
+    put:
+      operationId: updateTrainee
+      summary: Update trainee profile
+      tags:
+        - Trainee
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/components/schemas/TraineeUpdateRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: './schemas.yaml#/components/schemas/TraineeProfileResponse'
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+
+    delete:
+      operationId: deleteTrainee
+      summary: Delete trainee profile
+      tags:
+        - Trainee
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted successfully
+        '401':
+          description: Unauthorized
+
+  /api/trainees/{username}/activate:
+    patch:
+      operationId: updateTraineeStatus
+      summary: Activate/Deactivate trainee
+      tags:
+        - Trainee
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/components/schemas/TraineeUpdateStatusRequest'
+      responses:
+        '200':
+          description: Status updated successfully
+        '401':
+          description: Unauthorized
+
+  /api/trainees/{username}/trainings:
+    get:
+      operationId: getTraineeTrainings
+      summary: Get trainee trainings list
+      tags:
+        - Trainee
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: periodFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: periodTo
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: trainerName
+          in: query
+          schema:
+            type: string
+        - name: trainingType
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Trainings list retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas.yaml#/components/schemas/TraineeTrainingResponse'
+        '401':
+          description: Unauthorized
+
+  /api/trainees/{username}/trainers:
+    put:
+      operationId: updateTraineeTrainers
+      summary: Update trainee's trainers list
+      tags:
+        - Trainee
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/components/schemas/TraineeUpdateTrainersRequest'
+      responses:
+        '200':
+          description: Trainers updated
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas.yaml#/components/schemas/TrainerBasicInfo'
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+
+  /api/trainees/{username}/trainers/unassigned:
+    get:
+      operationId: getUnassignedTrainers
+      summary: Get unassigned trainers
+      tags:
+        - Trainee
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Unassigned trainers list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas.yaml#/components/schemas/TrainerUnassignedResponse'
+        '401':
+          description: Unauthorized
+
+  /api/trainers/register:
+    post:
+      operationId: registerTrainer
+      summary: Register new trainer
+      tags:
+        - Trainer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/components/schemas/TrainerRegistrationRequest'
+      responses:
+        '200':
+          description: Trainer registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: './schemas.yaml#/components/schemas/TrainerRegistrationResponse'
+        '400':
+          description: Invalid request
+
+  /api/trainers/profile:
+    get:
+      operationId: getCurrentTrainerProfile
+      summary: Get current trainer profile
+      tags:
+        - Trainer
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: './schemas.yaml#/components/schemas/TrainerProfileResponse'
+        '401':
+          description: Unauthorized
+
+  /api/trainers/{username}:
+    get:
+      operationId: getTrainerProfile
+      summary: Get trainer profile by username
+      tags:
+        - Trainer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: './schemas.yaml#/components/schemas/TrainerProfileResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+
+    put:
+      operationId: updateTrainer
+      summary: Update trainer profile
+      tags:
+        - Trainer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/components/schemas/TrainerUpdateRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: './schemas.yaml#/components/schemas/TrainerProfileResponse'
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+
+  /api/trainers/{username}/activate:
+    patch:
+      operationId: updateTrainerStatus
+      summary: Activate/Deactivate trainer
+      tags:
+        - Trainer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/components/schemas/TrainerUpdateStatusRequest'
+      responses:
+        '200':
+          description: Status updated
+        '401':
+          description: Unauthorized
+
+  /api/trainers/{username}/trainings:
+    get:
+      operationId: getTrainerTrainings
+      summary: Get trainer trainings list
+      tags:
+        - Trainer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: periodFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: periodTo
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: traineeName
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Trainings list retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas.yaml#/components/schemas/TrainerTrainingResponse'
+        '401':
+          description: Unauthorized
+
+  /api/trainings:
+    post:
+      operationId: createTraining
+      summary: Create new training
+      tags:
+        - Training
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/components/schemas/TrainingCreateRequest'
+      responses:
+        '200':
+          description: Training created
+          content:
+            application/json:
+              schema:
+                $ref: './schemas.yaml#/components/schemas/TrainingResponse'
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+
+  /api/training-types:
+    get:
+      operationId: getAllTrainingTypes
+      summary: Get all training types
+      tags:
+        - Training Type
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Training types list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas.yaml#/components/schemas/TrainingTypeResponse'
+        '401':
+          description: Unauthorized
+
+  /api/auth/login:
+    post:
+      operationId: login
+      summary: User login
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: './schemas.yaml#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+
+  /api/auth/change-password:
+    put:
+      operationId: changePassword
+      summary: Change user password
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: './schemas.yaml#/components/schemas/UserCredentialsResponse'
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+
+components:
+  schemas: {}
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT authentication token

@@ -49,7 +49,7 @@ spring:
       enabled: always
 
   activemq:
-    broker-url: ${SPRING_ACTIVEMQ_BROKER_URL:tcp://localhost:61616}
+    broker-url: ${SPRING_ACTIVEMQ_BROKER_URL:tcp://localhost:61617}
     user: ${SPRING_ACTIVEMQ_USER:admin}
     password: ${SPRING_ACTIVEMQ_PASSWORD:admin}
     packages:

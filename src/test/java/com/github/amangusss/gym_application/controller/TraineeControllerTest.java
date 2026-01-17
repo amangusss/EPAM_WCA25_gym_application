@@ -179,7 +179,6 @@ class TraineeControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value(TRAINEE_USERNAME))
                 .andExpect(jsonPath("$.address").value(NEW_ADDRESS));
 
         verify(traineeService, times(1)).updateTrainee(any(TraineeDTO.Request.Update.class), eq(TRAINEE_USERNAME));

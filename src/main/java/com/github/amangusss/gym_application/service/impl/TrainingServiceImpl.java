@@ -103,7 +103,13 @@ public class TrainingServiceImpl implements TrainingService {
                 .actionType(actionType)
                 .build();
 
-        workloadMessageProducer.sendWorkloadMessage(workload, transactionId);
+        try {
+            workloadMessageProducer.sendWorkloadMessage(workload, transactionId);
+            log.info("[{}] Successfully sent workload event for trainer: {}", transactionId, trainer.getUser().getUsername());
+        } catch (Exception e) {
+            log.error("[{}] Failed to send workload event for trainer: {}. Error: {}",
+                    transactionId, trainer.getUser().getUsername(), e.getMessage(), e);
+        }
     }
 
     private String getTransactionId() {

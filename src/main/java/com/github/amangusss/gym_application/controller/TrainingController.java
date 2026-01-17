@@ -1,6 +1,8 @@
 package com.github.amangusss.gym_application.controller;
 
+import com.github.amangusss.dto.generated.TrainingCreateRequest;
 import com.github.amangusss.gym_application.dto.training.TrainingDTO;
+import com.github.amangusss.gym_application.mapper.openapi.OpenApiTrainingMapper;
 import com.github.amangusss.gym_application.service.TrainingService;
 import com.github.amangusss.gym_application.metrics.TrainingMetrics;
 import com.github.amangusss.gym_application.metrics.MetricsExecutor;
@@ -35,12 +37,15 @@ public class TrainingController {
     TrainingService trainingService;
     TrainingMetrics trainingMetrics;
     MetricsExecutor metricsExecutor;
+    OpenApiTrainingMapper openApiTrainingMapper;
 
     @PostMapping(consumes = "application/json")
     @Operation(summary = "Add new training", description = "Creates a new training session")
-    public ResponseEntity<Void> addTraining(@Valid @RequestBody TrainingDTO.Request.Create request) {
+    public ResponseEntity<Void> addTraining(@Valid @RequestBody TrainingCreateRequest request) {
         String transactionId = MDC.get("transactionId");
         log.info("[Transaction: {}] POST /api/trainings", transactionId);
+
+        TrainingDTO.Request.Create internalRequest = openApiTrainingMapper.toInternalTrainingCreate(request);
 
         metricsExecutor.executeVoidWithMetrics(
                 MetricsExecutor.MetricsContext.builder()
@@ -48,12 +53,12 @@ public class TrainingController {
                         .endpoint("/api/trainings")
                         .method("POST")
                         .build(),
-                () -> trainingService.addTraining(request),
+                () -> trainingService.addTraining(internalRequest),
                 () -> {
                     trainingMetrics.incrementTrainingCreated();
-                    trainingMetrics.recordTrainingByTrainer(request.trainerUsername());
-                    trainingMetrics.recordTrainingByTrainee(request.traineeUsername());
-                    trainingMetrics.recordTrainingDuration(request.trainingDuration(), request.trainingName());
+                    trainingMetrics.recordTrainingByTrainer(internalRequest.trainerUsername());
+                    trainingMetrics.recordTrainingByTrainee(internalRequest.traineeUsername());
+                    trainingMetrics.recordTrainingDuration(internalRequest.trainingDuration(), internalRequest.trainingName());
                 },
                 ex -> {
                     trainingMetrics.incrementTrainingFailed();

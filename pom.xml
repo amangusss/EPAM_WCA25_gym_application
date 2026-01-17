@@ -25,6 +25,10 @@
         <jwt-version>0.11.2</jwt-version>
         <dotenv.version>3.0.0</dotenv.version>
         <testcontainers.version>2.0.2</testcontainers.version>
+        <openapi.tools.version>0.2.6</openapi.tools.version>
+        <openapi.generator.version>7.2.0</openapi.generator.version>
+        <build-helper-maven-plugin.version>3.5.0</build-helper-maven-plugin.version>
+        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -76,12 +80,18 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- OpenAPI (Swagger) -->
+        <!-- OpenAPI -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>${swagger.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.openapitools</groupId>
+            <artifactId>jackson-databind-nullable</artifactId>
+            <version>${openapi.tools.version}</version>
+        </dependency>
+
 
         <!-- PostgreSQL Database -->
         <dependency>
@@ -193,12 +203,13 @@
     </dependencies>
     <build>
         <plugins>
+            <!-- Maven Compiler Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <release>17</release>
+                    <release>${java.version}</release>
                     <fork>true</fork>
                     <compilerArgs>
                         <arg>--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
@@ -213,6 +224,8 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+
+            <!-- Spring Boot Maven Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -224,6 +237,84 @@
                         </exclude>
                     </excludes>
                 </configuration>
+            </plugin>
+
+            <!-- OpenAPI Generator Plugin -->
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${openapi.generator.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/openapi/api.yaml</inputSpec>
+                            <generatorName>spring</generatorName>
+                            <modelPackage>com.github.amangusss.dto.generated</modelPackage>
+
+                            <!-- Generate only DTOs, not API interfaces -->
+                            <generateApis>false</generateApis>
+                            <generateModels>true</generateModels>
+                            <generateSupportingFiles>false</generateSupportingFiles>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <generateModelDocumentation>false</generateModelDocumentation>
+                            <generateApiDocumentation>false</generateApiDocumentation>
+
+                            <!-- Skip validation since we only need models -->
+                            <skipValidateSpec>true</skipValidateSpec>
+
+                            <configOptions>
+                                <!-- Spring Boot 3 and Jakarta EE -->
+                                <useSpringBoot3>true</useSpringBoot3>
+                                <useJakartaEe>true</useJakartaEe>
+
+                                <!-- Java 8 date/time API -->
+                                <dateLibrary>java8</dateLibrary>
+
+                                <!-- Bean validation -->
+                                <useBeanValidation>true</useBeanValidation>
+                                <performBeanValidation>true</performBeanValidation>
+
+                                <!-- Make models serializable -->
+                                <serializableModel>true</serializableModel>
+
+                                <!-- Use Optional for nullable fields -->
+                                <useOptional>false</useOptional>
+
+                                <!-- Additional options -->
+                                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+                                <documentationProvider>none</documentationProvider>
+                                <annotationLibrary>none</annotationLibrary>
+                                <openApiNullable>false</openApiNullable>
+                                <additionalModelTypeAnnotations>@lombok.Builder</additionalModelTypeAnnotations>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Build Helper Plugin to add generated sources -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${build-helper-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/openapi/src/main/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
