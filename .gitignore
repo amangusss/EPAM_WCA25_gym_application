@@ -1,38 +1,6 @@
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# IDE
-.idea/
-*.iml
-*.iws
-*.ipr
-
-# Maven
-target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
-
-# Logs
-logs/
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Sensitive data
-application-local.yaml
+﻿application-local.yaml
 application-dev.yaml
 application-prod.yaml
-
 # Package Files #
 *.jar
 *.war
@@ -41,8 +9,12 @@ application-prod.yaml
 *.zip
 *.tar.gz
 *.rar
-
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# virtual machine crash logs
 hs_err_pid*
 replay_pid*
 /postman/
+# Cucumber and Jacoco reports
+target/cucumber-reports/
+target/site/jacoco/
+*.exec
+.cucumber/
