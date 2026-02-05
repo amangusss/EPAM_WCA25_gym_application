@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -16,6 +16,22 @@ spring:
     init:
       mode: always
       data-locations: classpath:data-test.sql
+  jms:
+    listener:
+      auto-startup: false
+  activemq:
+    in-memory: true
+    broker-url: vm://embedded?broker.persistent=false
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+security:
+  max-login-attempts: 3
+  lockout-duration: 300000
 
 logging:
   level:
