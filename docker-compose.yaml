@@ -19,9 +19,79 @@ services:
       timeout: 10s
       retries: 3
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: gym_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - gym-network
+    restart: unless-stopped
+
+  main-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: main-service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gym_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_ACTIVEMQ_BROKER_URL: tcp://activemq:61616
+      SPRING_ACTIVEMQ_USER: admin
+      SPRING_ACTIVEMQ_PASSWORD: admin
+    env_file:
+      - ./.env
+    depends_on:
+      - postgres
+      - activemq
+    networks:
+      - gym-network
+    restart: unless-stopped
+
+  report-service:
+    build:
+      context: C:/Users/user/OneDrive/Desktop/EPAM/Capstone Project/GymApplication_TrainingMicroservice
+      dockerfile: Dockerfile
+    container_name: report-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_ACTIVEMQ_BROKER_URL: tcp://activemq:61616
+      SPRING_ACTIVEMQ_USER: admin
+      SPRING_ACTIVEMQ_PASSWORD: admin
+    env_file:
+      - C:/Users/user/OneDrive/Desktop/EPAM/Capstone Project/GymApplication_TrainingMicroservice/.env
+    depends_on:
+      - activemq
+    networks:
+      - gym-network
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - gym-network
+    restart: unless-stopped
+
 networks:
   gym-network:
     driver: bridge
 
 volumes:
   activemq-data:
+  postgres-data:
+  mongodb-data:
