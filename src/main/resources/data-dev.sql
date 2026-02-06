@@ -1,3 +1,7 @@
+INSERT INTO training_types (type_name)
+VALUES ('FITNESS'), ('YOGA'), ('ZUMBA'), ('STRETCHING'), ('RESISTANCE')
+ON CONFLICT (type_name) DO NOTHING;
+
 INSERT INTO users (first_name, last_name, username, password, is_active) VALUES
     ('John', 'Doe', 'John.Doe', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5Tk.dRAC4Gfzi', true),
     ('Jane', 'Smith', 'Jane.Smith', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5Tk.dRAC4Gfzi', true),
